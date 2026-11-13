@@ -392,3 +392,6 @@ app_exists=False data_exists=True shortcuts=False
   规则管理列表改用独立 ScrollController，修复“资源”板块滚轮无法下滑。
 - 1.0.2：修正 webview_windows 原生滚轮坐标（原来固定发到 0,0，才会被影视侧栏吞掉）；
   实测滚动前后画面变化，影视首页可正常滚轮下滑。
+- 1.0.3：Douban 分类改用 `movie.douban.com/j/search_subjects` 主源、旧接口回退；
+  MoviePage 增加 Flutter 滚轮 Listener + JS 兜底，日志 `logs/movie-scroll.log`。
+  发布后需人工确认首页数据与滚轮。

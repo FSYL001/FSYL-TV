@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:kazumi/shell/app_paths.dart';
 import 'package:kazumi/shell/app_config.dart';
@@ -197,6 +198,43 @@ class MoviePageState extends State<MoviePage> with AutomaticKeepAliveClientMixin
     }
   }
 
+  /// Flutter-side fallback because the pinned webview_windows fork does not
+  /// reliably deliver wheel input to the page under the cursor.
+  void _onPointerSignal(PointerSignalEvent event) {
+    if (event is! PointerScrollEvent) return;
+    final dy = event.scrollDelta.dy;
+    if (dy == 0) return;
+    final x = event.localPosition.dx.toStringAsFixed(1);
+    final y = event.localPosition.dy.toStringAsFixed(1);
+    final delta = dy.toStringAsFixed(1);
+    try {
+      File('${AppPaths.instance.logsDir}/movie-scroll.log').writeAsStringSync(
+        '${DateTime.now().toIso8601String()} x=$x y=$y dy=$delta\n',
+        mode: FileMode.append,
+        flush: true,
+      );
+    } catch (_) {}
+    final controller = _controller;
+    if (controller == null) return;
+    unawaited(controller.executeScript('''
+(function () {
+  const x = $x, y = $y, dy = $delta;
+  let el = document.elementFromPoint(x, y);
+  while (el) {
+    const s = getComputedStyle(el);
+    const scrollable = s.overflowY === 'auto' ||
+      s.overflowY === 'scroll' || s.overflowY === 'overlay';
+    if (scrollable && el.scrollHeight > el.clientHeight + 1) {
+      el.scrollBy(0, dy);
+      return;
+    }
+    el = el.parentElement;
+  }
+  window.scrollBy(0, dy);
+})();
+'''));
+  }
+
   @override
   Widget build(BuildContext context) {
     super.build(context);
@@ -212,7 +250,11 @@ class MoviePageState extends State<MoviePage> with AutomaticKeepAliveClientMixin
         fit: StackFit.expand,
         children: [
           if (controller != null && controller.value.isInitialized)
-            Webview(controller, filterQuality: FilterQuality.low)
+            Listener(
+              behavior: HitTestBehavior.opaque,
+              onPointerSignal: _onPointerSignal,
+              child: Webview(controller, filterQuality: FilterQuality.low),
+            )
           else
             const Center(child: CircularProgressIndicator()),
           if (_initializing)

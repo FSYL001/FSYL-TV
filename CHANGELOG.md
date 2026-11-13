@@ -88,7 +88,12 @@ YYYY-MM-DD | 文件路径 | 修改内容
   GitHub Release；原“Kazumi 更新日志”改为“FSYL TV 更新日志”。
 - 2026-11-13 | `app/lib/pages/plugin_editor/plugin_view_page.dart` | 规则管理列表
   使用独立 ScrollController/关闭 primary，修复“资源”板块滚轮无法下滑。
-- 2026-11-13 | `app/lib/shell/app_version.dart` | 版本号提升到 1.0.1。
+- 2026-11-13 | `moonserver/src/app/api/douban/categories/route.ts` | Douban 分类接口
+  改为 `movie.douban.com/j/search_subjects` 优先、`m.douban.com/rexxar` 回退；
+  修复影视首页“获取豆瓣分类数据失败”。
+- 2026-11-13 | `app/lib/shell/movie_page.dart` | 增加 Flutter 层滚轮 Listener + JS
+  按鼠标位置滚动兜底，修复影视首页/播放页滚轮；日志写 `movie-scroll.log`。
+- 2026-11-13 | `app/lib/shell/app_version.dart` | 版本提升到 1.0.3。
 - 2026-11-13 | `tools/patch-webview-scroll.js`、`tools/elevated-build.ps1`、本地
   webview_windows 构建缓存 | 原生滚轮事件改为发送到鼠标所在坐标，修复影视板块
   滚轮无法滚动；版本提升到 1.0.2。
