@@ -265,7 +265,10 @@ sidecar_after_kill=False
 
 - 窗口标题、标题栏、托盘提示/菜单、启动页、关于页标题 → FSYL TV。
 - 应用图标（窗口/托盘/安装包）、MoonTV `logo.png`/`favicon.ico`/PWA 图标
-  用 `tools/make_icons.py` 生成的独立图标替换（渐变屏 + 播放符号）。
+  改用项目方提供的角色图 `fsyl_logo_source.png`，由 `tools/make_icons.py`
+  统一生成（圆角裁切，不再使用 Kazumi logo，也不再使用临时渐变图标）。
+- 关闭弹窗、我的页、路由错误页中剩余的 Kazumi 文案已改为 FSYL TV；
+  关于页保留“Kazumi 源代码/更新日志”等上游署名链接。
 - MoonTV 站点名/标题/PWA manifest → FSYL TV（构建时注入 `NEXT_PUBLIC_SITE_NAME`）。
 - 关于页写明：上游项目名、仓库链接、许可证、一句“基于其修改而来”、
   完整源码入口（安装目录 `source\FSYLTV-source.zip`）。
@@ -311,9 +314,9 @@ test exit=0
 实际产物：
 
 ```
-dist\FSYLTV-portable.zip        146,350,990 bytes
-dist\FSYLTV-Setup.zip           146,374,959 bytes
-解压后程序体积                   276 MB（两套相同）
+dist\FSYLTV-portable.zip        151,859,618 bytes
+dist\FSYLTV-Setup.zip           151,883,599 bytes
+解压后程序体积                   约 277 MB（两套相同）
 source\FSYLTV-source.zip        34,557,174 bytes（git archive HEAD）
 ```
 
