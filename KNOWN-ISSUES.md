@@ -10,6 +10,12 @@
    字面量（运行时字节不变，版本/lockfile 不变）。构建脚本会自动执行；
    重新 `flutter pub get` 后需要再执行一次。
 
+2. **webview_windows 的 NuGet 预构建**
+   固定 fork 每次构建都执行 `nuget install`。受限账户读不到 NuGet 的配置/锁文件，
+   但包已经还原到 `app\build\windows\x64\packages`。`tools/patch-webview-nuget.js`
+   在本地 pub 缓存中跳过“包已存在”时的还原；不升级依赖、不改版本。
+   `app\build\flutter_assets` 残留旧 logo 资产导致 errno 183 时，删除该目录再构建。
+
 2. **Flutter 构建需要提权**
    当前开发机的用户令牌没有 `SeCreateSymbolicLinkPrivilege`，Developer Mode
    注册表打开后仍不足。`tools/elevated-build.ps1` 以管理员令牌构建；

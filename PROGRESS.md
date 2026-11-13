@@ -212,6 +212,10 @@ node leftovers: 0
 - 切走影视：JS `pause()+muted=true`，捕获帧率降到 1fps；切回恢复帧率并停在原帧。
 - 无边框窗口 + 自绘标题栏（拖动/双击最大化/最小化/托盘/关闭）；
   窗口尺寸、位置、最大化状态与上次板块写入 `data\config\window.json`、`app.json`。
+- 全屏（Kazumi 播放器或 Ctrl+F）时隐藏整个自绘标题栏（胶囊与窗口按钮），
+  退出全屏恢复；窗口已最大化、原生不派发全屏事件时由 500ms 状态轮询兜底。
+- 关闭弹窗由外壳层渲染，动漫/影视任一板块都可见；影视区也可正常选择
+  “最小化至托盘 / 退出 FSYL TV”。
 - 托盘沿用上游 tray_manager，图标/提示/菜单已换为 FSYL TV。
 
 构建验收：`flutter build windows --release` → `Built ...\Release\kazumi.exe`，

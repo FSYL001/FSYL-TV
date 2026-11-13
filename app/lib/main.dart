@@ -101,6 +101,12 @@ void main() async {
     windowManager.waitUntilReadyToShow(windowOptions, () async {
       // window_manager controls desktop visibility to avoid startup flicker.
       await windowManager.setMinimumSize(const Size(980, 640));
+      if (Platform.isWindows) {
+        try {
+          await windowManager
+              .setIcon('assets/images/logo/logo_windows.ico');
+        } catch (_) {}
+      }
       await windowManager.show();
       await windowManager.focus();
     });

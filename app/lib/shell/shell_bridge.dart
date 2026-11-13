@@ -10,4 +10,8 @@ class ShellBridge {
   static final ValueNotifier<bool> animeActive = ValueNotifier<bool>(true);
   static final ValueNotifier<String> activeModule =
       ValueNotifier<String>('launch');
+
+  /// Set by the shell; lets the Windows close event use the shell-level
+  /// confirmation dialog while the movie module is visible.
+  static Future<void> Function()? closeHandler;
 }

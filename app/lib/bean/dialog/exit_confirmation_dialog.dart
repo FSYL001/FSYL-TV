@@ -13,7 +13,12 @@ class ExitDialogResult {
 }
 
 class ExitConfirmationDialog extends StatefulWidget {
-  const ExitConfirmationDialog({super.key});
+  const ExitConfirmationDialog({super.key, this.onResult});
+
+  /// When null the dialog pops a Navigator route (default Kazumi behavior).
+  /// The shell passes a callback so the dialog can live in its own Stack above
+  /// the movie texture without requiring the anime Navigator.
+  final ValueChanged<ExitDialogResult?>? onResult;
 
   @override
   State<ExitConfirmationDialog> createState() => _ExitConfirmationDialogState();
@@ -144,23 +149,32 @@ class _ExitConfirmationDialogState extends State<ExitConfirmationDialog> {
       actions: [
         TextButton(
           style: buttonStyle,
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () => _close(null),
           child: const Text('取消'),
         ),
         FilledButton(
           style: buttonStyle,
-          onPressed: () => Navigator.of(context).pop(
+          onPressed: () => _close(
             ExitDialogResult(action: _action, rememberChoice: _rememberChoice),
           ),
           child: Text(
             switch (_action) {
               ExitDialogAction.minimizeToTray => '最小化至托盘',
-              ExitDialogAction.exit => '退出',
+              ExitDialogAction.exit => '退出 FSYL TV',
             },
           ),
         ),
       ],
     );
+  }
+
+  void _close(ExitDialogResult? result) {
+    final callback = widget.onResult;
+    if (callback != null) {
+      callback(result);
+    } else {
+      Navigator.of(context).pop(result);
+    }
   }
 
   Widget _buildOption(
@@ -177,7 +191,7 @@ class _ExitConfirmationDialogState extends State<ExitConfirmationDialog> {
         ),
       ExitDialogAction.exit => (
           Icons.power_settings_new_rounded,
-          '退出 Kazumi',
+          '退出 FSYL TV',
           '结束运行并关闭应用',
         ),
     };

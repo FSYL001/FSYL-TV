@@ -57,6 +57,17 @@ YYYY-MM-DD | 文件路径 | 修改内容
   fileSystem 固定到 `data\cache\images`，元数据仓库改为同目录 JSON 文件。
 - 2026-11-13 | `app/lib/services/storage/settings_keys.dart` | `useSystemFont` 默认值改为
   true，FSYL TV 默认不使用 MiSans。
+- 2026-11-13 | `app/lib/shell/shell.dart` | 标题栏胶囊改为绝对居中；窗口全屏时
+  隐藏整个自绘标题栏并轮询原生全屏状态兜底；关闭请求改为外壳级弹层，影视区也能显示；
+  新增全屏/关闭调试环境变量。
+- 2026-11-13 | `app/lib/bean/dialog/exit_confirmation_dialog.dart` | 支持外壳回调模式
+  （不再依赖动漫 Navigator）；“退出 Kazumi” → “退出 FSYL TV”。
+- 2026-11-13 | `app/lib/app_widget.dart` | Windows 关闭事件委托给外壳处理，影视区
+  不再出现关不掉的问题。
+- 2026-11-13 | `app/lib/main.dart` | 启动时调用 `windowManager.setIcon`，确保任务栏
+  使用新的 FSYL TV 图标。
+- 2026-11-13 | `tools/elevated-build.ps1`、`tools/patch-webview-nuget.js` | 构建前跳过
+  webview_windows 已完成的 NuGet 还原，避免受限构建账户读取 NuGet 配置失败。
 - 2026-11-13 | `app/lib/main.dart` | 首次启动默认跳过 Kazumi 引导页与桌面快捷方式弹窗
   （避免用户可见 Kazumi 品牌；许可证与免责声明仍在关于页与 assets/statements 保留）。
 - 2026-11-13 | `app/lib/pages/about/about_page.dart` | 关于页改为 FSYL TV，新增上游

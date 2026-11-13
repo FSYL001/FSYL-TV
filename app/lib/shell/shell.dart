@@ -2,8 +2,11 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:kazumi/bean/dialog/exit_confirmation_dialog.dart';
+import 'package:kazumi/services/platform/app_exit.dart';
 import 'package:kazumi/shell/app_config.dart';
 import 'package:kazumi/shell/app_paths.dart';
+import 'package:kazumi/shell/exit_flow.dart';
 import 'package:kazumi/shell/moon_sidecar.dart';
 import 'package:kazumi/shell/movie_page.dart';
 import 'package:kazumi/shell/shell_bridge.dart';
@@ -31,9 +34,12 @@ class _FsylShellState extends State<FsylShell>
   bool _entered = false;
   bool _showLaunch = true;
   bool _movieCreated = false;
+  bool _isFullScreen = false;
+  bool _exitOverlayVisible = false;
   int _index = 0;
   Timer? _saveTimer;
   Timer? _launchFadeTimer;
+  Timer? _fullscreenPoll;
 
   late final AnimationController _switchFade = AnimationController(
     vsync: this,
@@ -44,7 +50,18 @@ class _FsylShellState extends State<FsylShell>
   @override
   void initState() {
     super.initState();
+    ShellBridge.closeHandler = _handleExitRequest;
     windowManager.addListener(this);
+    // Windows 只会在 WM_SIZE 变化时派发 enter-full-screen；窗口已最大化时
+    // setFullScreen(true) 可能不产生该事件，轮询原生状态兜底。
+    _fullscreenPoll = Timer.periodic(const Duration(milliseconds: 500), (_) async {
+      try {
+        final fullscreen = await windowManager.isFullScreen();
+        if (mounted && fullscreen != _isFullScreen) {
+          setState(() => _isFullScreen = fullscreen);
+        }
+      } catch (_) {}
+    });
     _loadConfig();
   }
 
@@ -90,6 +107,30 @@ class _FsylShellState extends State<FsylShell>
 
     if (Platform.environment['FSYLTV_S2'] == '1') {
       unawaited(_runS2Debug());
+    }
+
+    final fullscreenAfter = int.tryParse(
+      Platform.environment['FSYLTV_FULLSCREEN_AFTER'] ?? '',
+    );
+    if (fullscreenAfter != null && fullscreenAfter > 0) {
+      Timer(Duration(seconds: fullscreenAfter), () {
+        if (mounted) {
+          _debugLog('debug: enter fullscreen');
+          windowManager.setFullScreen(true);
+        }
+      });
+    }
+
+    final closeAfter = int.tryParse(
+      Platform.environment['FSYLTV_CLOSE_AFTER'] ?? '',
+    );
+    if (closeAfter != null && closeAfter > 0) {
+      Timer(Duration(seconds: closeAfter), () {
+        if (mounted) {
+          _debugLog('debug: request window close');
+          windowManager.close();
+        }
+      });
     }
   }
 
@@ -151,6 +192,45 @@ class _FsylShellState extends State<FsylShell>
         await windowManager.setBounds(bounds);
       }
     } catch (_) {}
+  }
+
+  @override
+  void onWindowEnterFullScreen() {
+    if (mounted) setState(() => _isFullScreen = true);
+  }
+
+  @override
+  void onWindowLeaveFullScreen() {
+    if (mounted) setState(() => _isFullScreen = false);
+  }
+
+  /// Close requests from the title bar, tray and the OS all land here. The
+  /// confirmation is a shell-level layer, so it is visible while the movie
+  /// texture is active as well.
+  Future<void> _handleExitRequest() async {
+    if (_exitOverlayVisible) return;
+    final remembered = rememberedExitAction();
+    if (remembered != null) {
+      await applyExitAction(remembered, onExit: _quitApplication);
+      return;
+    }
+    if (!mounted) return;
+    setState(() => _exitOverlayVisible = true);
+  }
+
+  void _onExitResult(ExitDialogResult? result) {
+    if (!mounted) return;
+    setState(() => _exitOverlayVisible = false);
+    if (result == null) return;
+    unawaited(() async {
+      await persistExitChoice(result);
+      await applyExitAction(result.action, onExit: _quitApplication);
+    }());
+  }
+
+  Future<void> _quitApplication() async {
+    await _sidecar.stop();
+    await AppExit.quit();
   }
 
   void _enterModule(int index) {
@@ -279,7 +359,9 @@ class _FsylShellState extends State<FsylShell>
           Positioned.fill(
             child: _entered
                 ? Padding(
-                    padding: const EdgeInsets.only(top: _titleBarHeight),
+                    padding: EdgeInsets.only(
+                      top: _isFullScreen ? 0 : _titleBarHeight,
+                    ),
                     child: FadeTransition(
                       opacity: Tween<double>(begin: 0.72, end: 1).animate(
                         CurvedAnimation(
@@ -295,7 +377,7 @@ class _FsylShellState extends State<FsylShell>
                   )
                 : const SizedBox.shrink(),
           ),
-          if (_entered)
+          if (_entered && !_isFullScreen)
             Positioned(
               left: 0,
               right: 0,
@@ -307,7 +389,7 @@ class _FsylShellState extends State<FsylShell>
                 onMinimizeToTray: () => windowManager.hide(),
                 onMinimize: () => windowManager.minimize(),
                 onMaximize: _toggleMaximize,
-                onClose: () => windowManager.close(),
+                onClose: () => _handleExitRequest(),
               ),
             ),
           if (_showLaunch)
@@ -324,6 +406,25 @@ class _FsylShellState extends State<FsylShell>
                 ),
               ),
             ),
+          if (_exitOverlayVisible)
+            Positioned.fill(
+              child: Stack(
+                children: [
+                  ModalBarrier(
+                    color: Colors.black54,
+                    dismissible: true,
+                    onDismiss: () =>
+                        setState(() => _exitOverlayVisible = false),
+                  ),
+                  Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: ExitConfirmationDialog(onResult: _onExitResult),
+                    ),
+                  ),
+                ],
+              ),
+            ),
         ],
       ),
     );
@@ -333,7 +434,9 @@ class _FsylShellState extends State<FsylShell>
   void dispose() {
     _saveTimer?.cancel();
     _launchFadeTimer?.cancel();
+    _fullscreenPoll?.cancel();
     _switchFade.dispose();
+    ShellBridge.closeHandler = null;
     windowManager.removeListener(this);
     unawaited(_sidecar.stop());
     _sidecar.dispose();
@@ -362,66 +465,82 @@ class _TitleBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color: const Color(0xFF17171C),
-      child: Row(
-        children: [
-          Expanded(
-            child: GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onPanStart: (_) => windowManager.startDragging(),
-              onDoubleTap: onMaximize,
-              child: Container(
-                height: _titleBarHeight,
-                padding: const EdgeInsets.only(left: 12),
-                alignment: Alignment.centerLeft,
-                child: const Row(
-                  children: [
-                    _BrandMark(size: 16),
-                    SizedBox(width: 8),
-                    Text(
-                      'FSYL TV',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 0.6,
+      child: SizedBox(
+        height: _titleBarHeight,
+        child: Stack(
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onPanStart: (_) => windowManager.startDragging(),
+                    onDoubleTap: onMaximize,
+                    child: Container(
+                      height: _titleBarHeight,
+                      padding: const EdgeInsets.only(left: 12),
+                      alignment: Alignment.centerLeft,
+                      child: const Row(
+                        children: [
+                          _BrandMark(size: 16),
+                          SizedBox(width: 8),
+                          Text(
+                            'FSYL TV',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.6,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ],
+                  ),
+                ),
+                Expanded(
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onPanStart: (_) => windowManager.startDragging(),
+                    onDoubleTap: onMaximize,
+                    child: Container(height: _titleBarHeight),
+                  ),
+                ),
+                _WindowButton(
+                  icon: Icons.vertical_align_bottom,
+                  tooltip: '隐藏到托盘',
+                  onTap: onMinimizeToTray,
+                ),
+                _WindowButton(
+                  icon: Icons.remove,
+                  tooltip: '最小化',
+                  onTap: onMinimize,
+                ),
+                _WindowButton(
+                  icon: Icons.crop_square,
+                  tooltip: '最大化/还原',
+                  onTap: onMaximize,
+                ),
+                _WindowButton(
+                  icon: Icons.close,
+                  tooltip: '关闭',
+                  onTap: onClose,
+                  isClose: true,
+                ),
+              ],
+            ),
+            // Keep the module switcher centered at any window width; it must
+            // not drift when content/app bar widths change.
+            Positioned.fill(
+              child: Center(
+                child: _CapsuleSwitcher(
+                  activeIndex: activeIndex,
+                  onSwitch: onSwitch,
                 ),
               ),
             ),
-          ),
-          _CapsuleSwitcher(activeIndex: activeIndex, onSwitch: onSwitch),
-          Expanded(
-            child: GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onPanStart: (_) => windowManager.startDragging(),
-              onDoubleTap: onMaximize,
-              child: Container(height: _titleBarHeight),
-            ),
-          ),
-          _WindowButton(
-            icon: Icons.vertical_align_bottom,
-            tooltip: '隐藏到托盘',
-            onTap: onMinimizeToTray,
-          ),
-          _WindowButton(
-            icon: Icons.remove,
-            tooltip: '最小化',
-            onTap: onMinimize,
-          ),
-          _WindowButton(
-            icon: Icons.crop_square,
-            tooltip: '最大化/还原',
-            onTap: onMaximize,
-          ),
-          _WindowButton(
-            icon: Icons.close,
-            tooltip: '关闭',
-            onTap: onClose,
-            isClose: true,
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
