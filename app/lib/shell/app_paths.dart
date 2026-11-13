@@ -55,6 +55,7 @@ class AppPaths {
     if (envMoon != null && envMoon.isNotEmpty) {
       moonDir = p.normalize(p.absolute(envMoon));
     } else if (repo != null &&
+        _looksLikeDevBuild(exeDir) &&
         File(p.join(repo.path, 'build', 'moon-sidecar', 'server.js'))
             .existsSync()) {
       moonDir = p.join(repo.path, 'build', 'moon-sidecar');
