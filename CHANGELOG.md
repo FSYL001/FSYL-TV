@@ -100,6 +100,9 @@ YYYY-MM-DD | 文件路径 | 修改内容
   GitHub Release 检查失败时回退 Gitee Releases；版本提升到 1.0.4。
 - 2026-11-13 | `tools/package.ps1` | 每次发布同时生成 `FSYLTV-Setup.exe`
   （7-Zip SFX，内含安装脚本与 payload）和便携 ZIP。
+- 2026-11-13 | `app/lib/services/network/bangumi_acceleration.dart` | 镜像凭据缺失时
+  自动回退公开 Bangumi API，修复动漫搜索 401；版本提升到 1.0.5。
+- 2026-11-13 | `tools/package.ps1` | 安装器 SFX 使用静默模式，避免弹窗等待。
 - 2026-11-13 | `tools/patch-webview-scroll.js`、`tools/elevated-build.ps1`、本地
   webview_windows 构建缓存 | 原生滚轮事件改为发送到鼠标所在坐标，修复影视板块
   滚轮无法滚动；版本提升到 1.0.2。

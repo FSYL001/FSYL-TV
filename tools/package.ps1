@@ -120,7 +120,7 @@ if ((Test-Path $sevenZip) -and (Test-Path $sfxModule)) {
     Push-Location $stage
     try { & $sevenZip a -t7z -mx=5 $archive '*' | Out-Null } finally { Pop-Location }
     $config = Join-Path $root 'build\fsyl-sfx-config.txt'
-    $configText = ";!@Install@!UTF-8!`r`nTitle=`"FSYL TV`"`r`nRunProgram=`"powershell.exe -NoProfile -ExecutionPolicy Bypass -File install.ps1`"`r`nDelete=`"1`"`r`n;!@InstallEnd@!`r`n"
+    $configText = ";!@Install@!UTF-8!`r`nTitle=`"FSYL TV`"`r`nGUIMode=`"2`"`r`nRunProgram=`"powershell.exe -NoProfile -ExecutionPolicy Bypass -File install.ps1`"`r`nDelete=`"1`"`r`n;!@InstallEnd@!`r`n"
     [System.IO.File]::WriteAllText($config, $configText, (New-Object System.Text.UTF8Encoding($false)))
     Remove-Item $setupExe -Force -ErrorAction SilentlyContinue
     $out = [System.IO.File]::Create($setupExe)
