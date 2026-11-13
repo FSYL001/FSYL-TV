@@ -62,7 +62,10 @@ class AppPaths {
     } else {
       moonDir = p.join(appDir, 'moon');
     }
-    serverScript = p.join(moonDir, 'server.js');
+    final packagedServer = p.join(moonDir, 'server', 'server.js');
+    serverScript = File(packagedServer).existsSync()
+        ? packagedServer
+        : p.join(moonDir, 'server.js');
     if (envNode != null && envNode.isNotEmpty) {
       nodeExe = p.normalize(p.absolute(envNode));
     } else if (File(p.join(moonDir, 'node.exe')).existsSync()) {
