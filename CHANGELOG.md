@@ -89,6 +89,9 @@ YYYY-MM-DD | 文件路径 | 修改内容
 - 2026-11-13 | `app/lib/pages/plugin_editor/plugin_view_page.dart` | 规则管理列表
   使用独立 ScrollController/关闭 primary，修复“资源”板块滚轮无法下滑。
 - 2026-11-13 | `app/lib/shell/app_version.dart` | 版本号提升到 1.0.1。
+- 2026-11-13 | `tools/package.ps1`、`tools/publish-release.ps1` | 发布资产改名为
+  `FSYLTV-windows-portable.zip` / `FSYLTV-windows-setup.zip`；新增一键打 tag、
+  推送并创建 GitHub Release 的脚本。
 - 2026-11-13 | `app/lib/main.dart` | 首次启动默认跳过 Kazumi 引导页与桌面快捷方式弹窗
   （避免用户可见 Kazumi 品牌；许可证与免责声明仍在关于页与 assets/statements 保留）。
 - 2026-11-13 | `app/lib/pages/about/about_page.dart` | 关于页改为 FSYL TV，新增上游

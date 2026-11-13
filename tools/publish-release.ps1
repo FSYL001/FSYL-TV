@@ -48,10 +48,14 @@ foreach ($asset in $assets) {
 
 Push-Location $root
 try {
-    gh release create $tag @assets `
-        --repo FSYL001/FSYL-TV `
-        --title "FSYL TV $version" `
-        --notes "FSYL TV $version。Windows 便携版与安装版；应用内‘关于/检查更新’会读取此 Release。"
+    $ghArgs = @(
+        'release', 'create', $tag
+    ) + $assets + @(
+        '--repo', 'FSYL001/FSYL-TV',
+        '--title', "FSYL TV $version",
+        '--notes', "FSYL TV $version release. Windows portable and setup builds."
+    )
+    & gh @ghArgs
 } finally {
     Pop-Location
 }
