@@ -103,7 +103,7 @@ class SettingsKeys {
     true,
     group: SettingGroup.danmaku,
   );
-  /// Off on desktop and on on mobile, like the B 站 client.
+  /// Off on desktop and on on mobile, like the B 绔?client.
   static final pauseOnDanmakuEdit = SettingKey<bool>(
     'pauseOnDanmakuEdit',
     true,
@@ -445,7 +445,7 @@ class SettingsKeys {
   );
   static const useSystemFont = SettingKey<bool>(
     _SettingBoxKey.useSystemFont,
-    false,
+    true,
     group: SettingGroup.theme,
   );
   static const forceAdBlocker = SettingKey<bool>(

@@ -26,7 +26,7 @@ constexpr const wchar_t kWindowClassName[] = L"FLUTTER_RUNNER_WIN32_WINDOW";
 bool ActivateExistingWindow()
 {
   // Find the existing window by class name
-  HWND hwnd = ::FindWindow(kWindowClassName, L"kazumi");
+  HWND hwnd = ::FindWindow(kWindowClassName, L"FSYL TV");
   if (hwnd != NULL)
   {
     // Forward the kazumi:// link this instance was launched with, if any.
@@ -114,7 +114,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
   FlutterWindow window(project);
   Win32Window::Point origin(10, 10);
   Win32Window::Size size(1280, 720);
-  if (!window.Create(L"kazumi", origin, size))
+  if (!window.Create(L"FSYL TV", origin, size))
   {
     if (mutex) {
       CloseHandle(mutex);

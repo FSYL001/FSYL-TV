@@ -19,13 +19,13 @@ class TrayService {
     _iconSet = true;
 
     if (!Platform.isLinux) {
-      await trayManager.setToolTip('Kazumi');
+      await trayManager.setToolTip('FSYL TV');
     }
 
     Menu trayMenu = Menu(items: [
       MenuItem(key: 'show_window', label: '显示窗口'),
       MenuItem.separator(),
-      MenuItem(key: 'exit', label: '退出 Kazumi')
+      MenuItem(key: 'exit', label: '退出 FSYL TV')
     ]);
     await trayManager.setContextMenu(trayMenu);
   }

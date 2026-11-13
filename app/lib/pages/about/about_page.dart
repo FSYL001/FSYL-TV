@@ -1,14 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:path/path.dart' as p;
 
 import 'package:kazumi/bean/settings/settings_detail_scaffold.dart';
 import 'package:kazumi/bean/widget/content_section.dart';
 import 'package:kazumi/pages/about/about_widgets.dart';
 import 'package:kazumi/request/config/api_endpoints.dart';
+import 'package:kazumi/shell/app_paths.dart';
 
 class AboutPage extends StatelessWidget {
   const AboutPage({super.key, required this.onCheckUpdate});
 
   final Future<bool> Function() onCheckUpdate;
+
+  String get _sourceDir => p.normalize(
+        p.join(AppPaths.instance.appDir, '..', 'source'),
+      );
 
   @override
   Widget build(BuildContext context) => SettingsDetailScaffold(
@@ -16,57 +22,70 @@ class AboutPage extends StatelessWidget {
         body: AboutContent(
           children: [
             _ProjectHeader(onCheckUpdate: onCheckUpdate),
+            const SizedBox(height: 16),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16),
+              child: Text(
+                'FSYL TV 基于 Kazumi（GPL-3.0）与 MoonTV（MIT）修改而来，'
+                '整体以 GPL-3.0 公开发布。所有上游版权声明、LICENSE 与第三方许可文本均予保留。',
+              ),
+            ),
             const SizedBox(height: 24),
             LayoutBuilder(builder: (context, constraints) {
               final sections = [
                 ContentSection.group(
-                  title: '项目',
-                  children: const [
-                    AboutLinkTile(
-                      icon: Icons.code_rounded,
-                      title: '源代码',
-                      url: ApiEndpoints.sourceUrl,
-                    ),
-                    AboutLinkTile(
-                      icon: Icons.language_rounded,
-                      title: '项目主页',
-                      url: ApiEndpoints.projectUrl,
-                    ),
-                    AboutLinkTile(
-                      icon: Icons.bug_report_rounded,
-                      title: '问题反馈',
-                      url: '${ApiEndpoints.sourceUrl}/issues',
-                    ),
-                    AboutLinkTile(
-                      icon: Icons.forum_rounded,
-                      title: 'Telegram',
-                      url: ApiEndpoints.telegramGroup,
-                    ),
-                  ],
-                ),
-                ContentSection.group(
-                  title: '开源',
+                  title: '上游项目',
                   children: [
                     const AboutLinkTile(
-                      icon: Icons.handshake_outlined,
-                      title: '贡献指南',
-                      url:
-                          '${ApiEndpoints.sourceUrl}/blob/main/static/doc/CONTRIBUTING.md',
+                      icon: Icons.code_rounded,
+                      title: 'Kazumi 源代码（GPL-3.0）',
+                      subtitle: 'https://github.com/Predidit/Kazumi',
+                      url: 'https://github.com/Predidit/Kazumi',
                     ),
-                    const AboutLinkTile.route(
-                      icon: Icons.favorite_outline_rounded,
-                      title: '致谢',
-                      route: '/settings/about/credits',
+                    const AboutLinkTile(
+                      icon: Icons.movie_filter_outlined,
+                      title: 'MoonTV 源代码（MIT）',
+                      subtitle: 'https://github.com/samqin123/MoonTV',
+                      url: 'https://github.com/samqin123/MoonTV',
+                    ),
+                    AboutLinkTile(
+                      icon: Icons.folder_zip_outlined,
+                      title: 'FSYL TV 完整源码',
+                      subtitle: '随安装包提供：$_sourceDir',
+                      url: Uri.file(_sourceDir).toString(),
                     ),
                     const AboutLinkTile(
                       icon: Icons.balance_rounded,
                       title: 'GPL-3.0 许可证',
-                      url: '${ApiEndpoints.sourceUrl}/blob/main/LICENSE',
+                      subtitle: 'LICENSE（安装目录内保留原文）',
+                      url: 'https://www.gnu.org/licenses/gpl-3.0.txt',
                     ),
-                    const AboutLinkTile.route(
+                    const AboutLinkTile(
                       icon: Icons.description_outlined,
-                      title: '第三方许可证',
-                      route: '/settings/about/license',
+                      title: '第三方许可与声明',
+                      subtitle: 'THIRD-PARTY-NOTICES.md / LICENSE-MOONTV-MIT',
+                      url:
+                          'https://github.com/samqin123/MoonTV/blob/main/LICENSE',
+                    ),
+                  ],
+                ),
+                ContentSection.group(
+                  title: 'Kazumi 上游链接',
+                  children: const [
+                    AboutLinkTile(
+                      icon: Icons.language_rounded,
+                      title: 'Kazumi 项目主页',
+                      url: 'https://github.com/Predidit/Kazumi',
+                    ),
+                    AboutLinkTile(
+                      icon: Icons.bug_report_rounded,
+                      title: 'Kazumi 问题反馈',
+                      url: 'https://github.com/Predidit/Kazumi/issues',
+                    ),
+                    AboutLinkTile.route(
+                      icon: Icons.favorite_outline_rounded,
+                      title: '致谢',
+                      route: '/settings/about/credits',
                     ),
                   ],
                 ),
@@ -112,7 +131,7 @@ class _ProjectHeader extends StatelessWidget {
           Semantics(
             header: true,
             child: Text(
-              'Kazumi',
+              'FSYL TV',
               style: theme.textTheme.displayMedium?.copyWith(
                 color: colors.primary,
                 fontWeight: FontWeight.w600,
@@ -121,14 +140,14 @@ class _ProjectHeader extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            ApiEndpoints.version,
+            '上游 Kazumi ${ApiEndpoints.version}',
             style: theme.textTheme.bodyMedium?.copyWith(
               color: colors.onSurfaceVariant,
             ),
           ),
           const SizedBox(height: 12),
           Text(
-            '基于自定义规则的开源番剧应用',
+            '本地单窗口影视客户端 · 动漫基于 Kazumi，影视基于 MoonTV',
             style: theme.textTheme.bodyLarge,
           ),
           const SizedBox(height: 20),
@@ -142,9 +161,9 @@ class _ProjectHeader extends StatelessWidget {
                 style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
                 onPressed: () => openAboutLink(
                   context,
-                  '${ApiEndpoints.sourceUrl}/releases',
+                  'https://github.com/Predidit/Kazumi/releases',
                 ),
-                child: const Text('更新日志'),
+                child: const Text('Kazumi 更新日志'),
               ),
             ],
           ),
