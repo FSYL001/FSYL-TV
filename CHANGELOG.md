@@ -94,6 +94,12 @@ YYYY-MM-DD | 文件路径 | 修改内容
 - 2026-11-13 | `app/lib/shell/movie_page.dart` | 增加 Flutter 层滚轮 Listener + JS
   按鼠标位置滚动兜底，修复影视首页/播放页滚轮；日志写 `movie-scroll.log`。
 - 2026-11-13 | `app/lib/shell/app_version.dart` | 版本提升到 1.0.3。
+- 2026-11-13 | `app/lib/services/update/auto_updater.dart` | Windows 便携包下载完成后
+  自动解压、替换程序并重启，不再停在“下载完成”弹窗。
+- 2026-11-13 | `app/lib/services/update/auto_updater.dart`、`app/lib/shell/app_version.dart` |
+  GitHub Release 检查失败时回退 Gitee Releases；版本提升到 1.0.4。
+- 2026-11-13 | `tools/package.ps1` | 每次发布同时生成 `FSYLTV-Setup.exe`
+  （7-Zip SFX，内含安装脚本与 payload）和便携 ZIP。
 - 2026-11-13 | `tools/patch-webview-scroll.js`、`tools/elevated-build.ps1`、本地
   webview_windows 构建缓存 | 原生滚轮事件改为发送到鼠标所在坐标，修复影视板块
   滚轮无法滚动；版本提升到 1.0.2。

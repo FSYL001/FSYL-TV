@@ -395,3 +395,5 @@ app_exists=False data_exists=True shortcuts=False
 - 1.0.3：Douban 分类改用 `movie.douban.com/j/search_subjects` 主源、旧接口回退；
   MoviePage 增加 Flutter 滚轮 Listener + JS 兜底，日志 `logs/movie-scroll.log`。
   发布后需人工确认首页数据与滚轮。
+- 1.0.4：更新下载完成后自动解压替换并重启；发布同时产出便携 ZIP 与
+  `FSYLTV-Setup.exe`；更新检查增加 Gitee 回退源。

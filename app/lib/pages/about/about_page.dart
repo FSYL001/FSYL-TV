@@ -1,21 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:path/path.dart' as p;
 
 import 'package:kazumi/bean/settings/settings_detail_scaffold.dart';
 import 'package:kazumi/bean/widget/content_section.dart';
 import 'package:kazumi/pages/about/about_widgets.dart';
 import 'package:kazumi/request/config/api_endpoints.dart';
-import 'package:kazumi/shell/app_paths.dart';
 import 'package:kazumi/shell/app_version.dart';
 
 class AboutPage extends StatelessWidget {
   const AboutPage({super.key, required this.onCheckUpdate});
 
   final Future<bool> Function() onCheckUpdate;
-
-  String get _sourceDir => p.normalize(
-        p.join(AppPaths.instance.appDir, '..', 'source'),
-      );
 
   @override
   Widget build(BuildContext context) => SettingsDetailScaffold(
@@ -52,8 +46,14 @@ class AboutPage extends StatelessWidget {
                     AboutLinkTile(
                       icon: Icons.folder_zip_outlined,
                       title: 'FSYL TV 完整源码',
-                      subtitle: '随安装包提供：$_sourceDir',
-                      url: Uri.file(_sourceDir).toString(),
+                      subtitle: 'GitHub 仓库：${AppVersion.githubRepository}',
+                      url: AppVersion.githubRepository,
+                    ),
+                    const AboutLinkTile(
+                      icon: Icons.cloud_outlined,
+                      title: 'Gitee 镜像',
+                      subtitle: 'https://gitee.com/FSYL001/FSYL-TV',
+                      url: 'https://gitee.com/FSYL001/FSYL-TV',
                     ),
                     const AboutLinkTile(
                       icon: Icons.balance_rounded,

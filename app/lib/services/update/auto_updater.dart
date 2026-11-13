@@ -164,11 +164,49 @@ class AutoUpdater {
   }
 
   Future<Map<String, dynamic>> _latestRelease() async {
-    final raw = await _downloadClient.getPlain(ApiEndpoints.latestAppMirror);
-    final data = json.decode(raw);
-    if (data is! Map) {
-      throw Exception('Invalid update response');
+    try {
+      final raw =
+          await _downloadClient.getPlain(ApiEndpoints.latestAppMirror);
+      return _decodeRelease(raw);
+    } catch (e) {
+      KazumiLogger().w('Update: GitHub release check failed, trying Gitee',
+          error: e);
+      final raw = await _downloadClient.getPlain(
+        AppVersion.giteeLatestReleaseApi,
+        headers: {'User-Agent': 'FSYL-TV'},
+      );
+      final release = _decodeRelease(raw);
+      final id = release['id'];
+      final assets = release['assets'];
+      if ((assets is! List || assets.isEmpty) && id != null) {
+        final attachRaw = await _downloadClient.getPlain(
+          'https://gitee.com/api/v5/repos/'
+          '${AppVersion.githubOwner}/${AppVersion.githubRepo}/'
+          'releases/$id/attach_files',
+          headers: {'User-Agent': 'FSYL-TV'},
+        );
+        final attachments = json.decode(attachRaw);
+        if (attachments is List) {
+          release['assets'] = [
+            for (final item in attachments)
+              if (item is Map)
+                {
+                  'name': item['name'] ?? item['title'] ?? '',
+                  'browser_download_url': item['browser_download_url'] ??
+                      item['download_url'] ??
+                      item['url'] ??
+                      '',
+                }
+          ];
+        }
+      }
+      return release;
     }
+  }
+
+  Map<String, dynamic> _decodeRelease(String raw) {
+    final data = json.decode(raw);
+    if (data is! Map) throw Exception('Invalid update response');
     return Map<String, dynamic>.from(data);
   }
 
@@ -297,7 +335,18 @@ class AutoUpdater {
         },
       );
 
-      _showDownloadCompleteDialog(downloadPath, updateInfo);
+      if (Platform.isWindows &&
+          updateInfo.recommendedInstallationType ==
+              InstallationType.windowsPortable) {
+        // Download completion is the point of no return for the portable
+        // update: extract, replace and restart without another confirmation.
+        await _installUpdate(
+          downloadPath,
+          updateInfo.recommendedInstallationType,
+        );
+      } else {
+        _showDownloadCompleteDialog(downloadPath, updateInfo);
+      }
     }, onError: (e, stackTrace) {
       final errorMessage = getUpdateDownloadErrorMessage(e);
 
@@ -427,7 +476,7 @@ class AutoUpdater {
     );
   }
 
-  void _installUpdate(
+  Future<void> _installUpdate(
       String filePath, InstallationType installationType) async {
     try {
       KazumiDialog.showToast(message: '准备安装更新，应用即将退出...');
