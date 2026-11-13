@@ -314,8 +314,8 @@ test exit=0
 实际产物：
 
 ```
-dist\FSYLTV-portable.zip        151,859,618 bytes
-dist\FSYLTV-Setup.zip           151,883,599 bytes
+dist\FSYLTV-portable.zip        约 152.8 MB
+dist\FSYLTV-Setup.zip           约 152.8 MB
 解压后程序体积                   约 277 MB（两套相同）
 source\FSYLTV-source.zip        34,557,174 bytes（git archive HEAD）
 ```

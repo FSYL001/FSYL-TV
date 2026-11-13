@@ -71,8 +71,8 @@
 
 ## 打包产物（阶段 8）
 
-- `dist\FSYLTV-portable.zip`：151,859,618 bytes；解压后约 277 MB。
-- `dist\FSYLTV-Setup.zip`：151,883,599 bytes；`install.ps1` 按用户安装。
+- `dist\FSYLTV-portable.zip`：约 152.8 MB；解压后约 277 MB。
+- `dist\FSYLTV-Setup.zip`：约 152.8 MB；`install.ps1` 按用户安装。
 - `source\FSYLTV-source.zip`：34,557,174 bytes（`git archive HEAD`）。
 - 安装版验证：sidecar 从 `%LOCALAPPDATA%\FSYLTV\app\moon` 启动并打印
   `FSYLTV_READY 8466`；`uninstall.ps1` 保留 data 后程序与快捷方式均移除。
