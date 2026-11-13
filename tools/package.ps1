@@ -109,7 +109,7 @@ $stub = Join-Path $root 'build\FSYLTV-Setup-stub.exe'
 $setupExe = Join-Path $dist 'FSYLTV-Setup.exe'
 if ((Test-Path $csc) -and (Test-Path $installerSource)) {
     Write-Output '=== installer exe ==='
-    & $csc /nologo /target:exe /out:$stub /r:System.IO.Compression.FileSystem.dll $installerSource
+    & $csc /nologo /target:exe /out:$stub /r:System.IO.Compression.dll /r:System.IO.Compression.FileSystem.dll $installerSource
     Assert-LastExit 'installer stub'
     $stubBytes = [IO.File]::ReadAllBytes($stub)
     $zipBytes = [IO.File]::ReadAllBytes($setupZip)
