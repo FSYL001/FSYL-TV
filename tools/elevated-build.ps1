@@ -28,6 +28,8 @@ New-Item -ItemType Directory -Force $logDir | Out-Null
 # NuGet config/lock is unreadable under the restricted build account; packages
 # are already restored, so skip webview_windows' repeated nuget install.
 & node (Join-Path $root 'tools\patch-webview-nuget.js') *>> (Join-Path $logDir 'flutter-build.log')
+# webview_windows posts wheel input at (0,0); use the last cursor position.
+& node (Join-Path $root 'tools\patch-webview-scroll.js') *>> (Join-Path $logDir 'flutter-build.log')
 Set-Location (Join-Path $root 'app')
 & (Join-Path $root 'tools\.cache\flutter\bin\flutter.bat') build windows --release --no-pub *> (Join-Path $logDir 'flutter-build.log')
 $code = $LASTEXITCODE

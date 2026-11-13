@@ -89,6 +89,9 @@ YYYY-MM-DD | 文件路径 | 修改内容
 - 2026-11-13 | `app/lib/pages/plugin_editor/plugin_view_page.dart` | 规则管理列表
   使用独立 ScrollController/关闭 primary，修复“资源”板块滚轮无法下滑。
 - 2026-11-13 | `app/lib/shell/app_version.dart` | 版本号提升到 1.0.1。
+- 2026-11-13 | `tools/patch-webview-scroll.js`、`tools/elevated-build.ps1`、本地
+  webview_windows 构建缓存 | 原生滚轮事件改为发送到鼠标所在坐标，修复影视板块
+  滚轮无法滚动；版本提升到 1.0.2。
 - 2026-11-13 | `tools/package.ps1`、`tools/publish-release.ps1` | 发布资产改名为
   `FSYLTV-windows-portable.zip` / `FSYLTV-windows-setup.zip`；新增一键打 tag、
   推送并创建 GitHub Release 的脚本。

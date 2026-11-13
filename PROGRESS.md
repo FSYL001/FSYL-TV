@@ -390,3 +390,5 @@ app_exists=False data_exists=True shortcuts=False
   新角色 logo。若任务栏固定项仍显示旧图，取消固定后重新固定。
 - 1.0.1：关于页“检查更新”明确读取 FSYL TV Release，更新日志按钮指向 FSYL 仓库；
   规则管理列表改用独立 ScrollController，修复“资源”板块滚轮无法下滑。
+- 1.0.2：修正 webview_windows 原生滚轮坐标（原来固定发到 0,0，才会被影视侧栏吞掉）；
+  实测滚动前后画面变化，影视首页可正常滚轮下滑。

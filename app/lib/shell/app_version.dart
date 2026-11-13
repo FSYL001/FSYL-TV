@@ -3,7 +3,7 @@
 class AppVersion {
   AppVersion._();
 
-  static const String current = '1.0.1';
+  static const String current = '1.0.2';
   static const String githubOwner = 'FSYL001';
   static const String githubRepo = 'FSYL-TV';
   static const String githubRepository =
