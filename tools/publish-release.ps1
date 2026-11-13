@@ -34,7 +34,12 @@ try {
 }
 
 if (-not $SkipPackage) {
-    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $root 'tools\package.ps1') -SkipBuild:$SkipBuild
+    $packageArgs = @(
+        '-NoProfile', '-ExecutionPolicy', 'Bypass',
+        '-File', (Join-Path $root 'tools\package.ps1')
+    )
+    if ($SkipBuild) { $packageArgs += '-SkipBuild' }
+    & powershell.exe @packageArgs
     if ($LASTEXITCODE -ne 0) { throw 'package.ps1 failed' }
 }
 
