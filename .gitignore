@@ -21,6 +21,8 @@ node_modules/
 .next/
 out/
 dist/
+moonserver/public/sw.js
+moonserver/public/workbox-*.js
 npm-debug.log*
 pnpm-debug.log*
 yarn-debug.log*

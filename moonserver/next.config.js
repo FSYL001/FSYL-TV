@@ -6,6 +6,12 @@ const nextConfig = {
     dirs: ['src'],
   },
 
+  // FSYL TV: routers cannot use a folder name starting with "_", so expose the
+  // contract path /__shutdown as a rewrite to the real route handler.
+  async rewrites() {
+    return [{ source: '/__shutdown', destination: '/api/shutdown' }];
+  },
+
   reactStrictMode: false,
   swcMinify: true,
 

@@ -14,6 +14,18 @@ export async function middleware(request: NextRequest) {
 
   const storageType = process.env.NEXT_PUBLIC_STORAGE_TYPE || 'localstorage';
 
+  // FSYL TV 本地单机模式：sidecar 只监听 127.0.0.1，不再要求登录密码。
+  // 未设置 FSYLTV_LOCAL_MODE 时行为与上游完全一致。
+  if (
+    process.env.FSYLTV_LOCAL_MODE === 'true' &&
+    storageType === 'localstorage'
+  ) {
+    const host = request.headers.get('host') || '';
+    if (host.startsWith('127.0.0.1') || host.startsWith('localhost')) {
+      return NextResponse.next();
+    }
+  }
+
   if (!process.env.PASSWORD) {
     // 如果没有设置密码，重定向到警告页面
     const warningUrl = new URL('/warning', request.url);
@@ -125,6 +137,8 @@ function shouldSkipAuth(pathname: string): boolean {
     '/icons/',
     '/logo.png',
     '/screenshot.png',
+    '/api/health',
+    '/__shutdown',
   ];
 
   return skipPaths.some((path) => pathname.startsWith(path));
