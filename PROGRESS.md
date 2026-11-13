@@ -311,5 +311,50 @@ test exit=0
 实际产物：
 
 ```
-（待追加）
+dist\FSYLTV-portable.zip        146,350,990 bytes
+dist\FSYLTV-Setup.zip           146,374,959 bytes
+解压后程序体积                   276 MB（两套相同）
+source\FSYLTV-source.zip        34,557,174 bytes（git archive HEAD）
 ```
+
+sidecar 生产布局验收（`build\moon`，即安装后的 `app\moon`）：
+
+```
+ready=True waited_ms=600
+READY=FSYLTV_READY 43210
+health=200 {"status":"ok","app":"fsyltv","name":"FSYL TV","uptime":1,...}
+root=200 title=FSYL TV
+shutdown=200 exited=True node_left=0
+```
+
+便携版验收（`dist\FSYLTV-Portable\FSYLTV\fsyl_tv.exe`，真实生产路径）：
+
+```
+PIDFILE=...\FSYLTV-Portable\FSYLTV\moon\node.exe ...\FSYLTV-Portable\FSYLTV\moon\server\server.js
+USES_DIST_MOON=True
+moon.log: job object assign pid=89064 ok=true
+         FSYLTV_READY 13177
+health=200 {"status":"ok","app":"fsyltv","name":"FSYL TV",...}
+sidecar_after_kill=False
+```
+
+安装/卸载验收：
+
+```
+install exit=0
+APP_DIR=C:\Users\JKH\AppData\Local\FSYLTV\app
+exe=True moon_node=True moon_server=True
+桌面/开始菜单快捷方式：True / True
+
+安装版启动：
+moon.log  FSYLTV_READY 8466（sidecar 从 %LOCALAPPDATA%\FSYLTV\app\moon 启动）
+
+'n' | uninstall.ps1
+uninstall exit=0
+data kept at C:\Users\JKH\AppData\Local\FSYLTV\data
+FSYL TV removed.
+app_exists=False data_exists=True shortcuts=False
+```
+
+阶段 8 完成：便携版与按用户安装版均可运行，sidecar 使用 `app\moon\node.exe` +
+`app\moon\server\server.js`，强杀主程序后无孤儿进程；GPL 源码包随包提供。

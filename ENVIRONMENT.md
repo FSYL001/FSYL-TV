@@ -69,6 +69,10 @@
 - 应用运行：无未捕获异常；数据目录为
   `config/ account/ anime/ movie/ cache/ logs/`，WebView2 生成 `data\movie\EBWebView`。
 
-## 待补记录
+## 打包产物（阶段 8）
 
-打包产物尺寸与最终安装验证在阶段 8 执行后追加。
+- `dist\FSYLTV-portable.zip`：146,350,990 bytes；解压后 276 MB。
+- `dist\FSYLTV-Setup.zip`：146,374,959 bytes；`install.ps1` 按用户安装。
+- `source\FSYLTV-source.zip`：34,557,174 bytes（`git archive HEAD`）。
+- 安装版验证：sidecar 从 `%LOCALAPPDATA%\FSYLTV\app\moon` 启动并打印
+  `FSYLTV_READY 8466`；`uninstall.ps1` 保留 data 后程序与快捷方式均移除。
