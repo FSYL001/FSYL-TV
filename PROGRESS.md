@@ -374,7 +374,9 @@ app_exists=False data_exists=True shortcuts=False
   发布脚本 `tools/publish-release.ps1` 生成 tag/Release。
 - 影视首页封面：新增本地 `/api/image-proxy`，默认注入 `RUNTIME_CONFIG.IMAGE_PROXY`；
   Douban 封面带 `Referer: https://movie.douban.com/`。实测代理返回
-  `200 image/jpeg`（25,535 bytes），首页封面恢复。
+  `200 image/jpeg`（25,535 bytes），安装版首页《热门电影/热门剧集》封面全部恢复。
+- 应用更新：GitHub Release `v1.0.0` 已发布；便携版/安装版资产由
+  `tools/publish-release.ps1` 生成，应用内检查更新读取该 Release。
 - 免责声明：三处默认文案统一为
   “本网站 / APP 仅提供影视信息搜索服务……仅供交流学习 ！”。
 - 动漫规则：将当前导入的 18 条规则放入 `app/assets/rules/plugins.json`，首次启动

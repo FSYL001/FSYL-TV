@@ -1,8 +1,10 @@
 import 'dart:math';
 
 bool needUpdate(String localVersion, String remoteVersion) {
-  final localVersionList = localVersion.split('.');
-  final remoteVersionList = remoteVersion.split('.');
+  final localVersionList =
+      localVersion.trim().replaceFirst(RegExp(r'^[vV]'), '').split('.');
+  final remoteVersionList =
+      remoteVersion.trim().replaceFirst(RegExp(r'^[vV]'), '').split('.');
   final maxLength = max(localVersionList.length, remoteVersionList.length);
   for (var i = 0; i < maxLength; i++) {
     final localSegment =
