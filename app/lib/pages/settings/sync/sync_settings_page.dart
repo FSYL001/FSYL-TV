@@ -14,6 +14,7 @@ enum _SyncStatus {
   connectionError('连接异常', Icons.error_outline_rounded),
   enabled('已开启', Icons.check_circle_outline_rounded),
   disabled('已关闭', Icons.pause_circle_outline_rounded),
+  localOnly('本地离线', Icons.cloud_off_rounded),
   contentRequired('待选择内容', Icons.tune_rounded);
 
   const _SyncStatus(this.label, this.icon);
@@ -96,6 +97,18 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
                 action: hasServer ? '管理多设备同步' : '设置 WebDAV',
                 onPressed: () => _open('/settings/webdav/'),
               ),
+              _SyncServiceCard(
+                title: '账号与云同步',
+                service: 'FSYL TV',
+                description: '登录后可跨设备同步；当前为本地离线模式。',
+                content: '账号 · 设备 ID · 服务器地址',
+                icon: Icons.cloud_outlined,
+                color: colors.primaryContainer,
+                onColor: colors.onPrimaryContainer,
+                status: _SyncStatus.localOnly,
+                action: '管理账号',
+                onPressed: () => _open('/settings/account'),
+              ),
             ];
             return SyncPageBody(
               children: [
@@ -109,12 +122,18 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
                     final largeText =
                         MediaQuery.textScalerOf(context).scale(16) > 22;
                     if (constraints.maxWidth >= 680 && !largeText) {
-                      return Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                      return Column(
                         children: [
-                          Expanded(child: cards[0]),
-                          const SizedBox(width: 16),
-                          Expanded(child: cards[1]),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(child: cards[0]),
+                              const SizedBox(width: 16),
+                              Expanded(child: cards[1]),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          cards[2],
                         ],
                       );
                     }

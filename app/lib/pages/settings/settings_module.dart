@@ -18,6 +18,7 @@ import 'package:kazumi/pages/settings/settings_page.dart';
 import 'package:kazumi/pages/settings/storage_settings.dart';
 import 'package:kazumi/pages/settings/super_resolution_settings.dart';
 import 'package:kazumi/pages/settings/sync/bangumi_sync_page.dart';
+import 'package:kazumi/pages/settings/sync/account_sync_page.dart';
 import 'package:kazumi/pages/settings/sync/sync_settings_page.dart';
 import 'package:kazumi/pages/settings/sync/webdav_server_page.dart';
 import 'package:kazumi/pages/settings/sync/webdav_sync_page.dart';
@@ -36,6 +37,8 @@ final settingsModule = createModule(
         sub
           ..route('/', child: (context, state) => const SettingsIndexPage())
           ..route('/sync', child: (context, state) => const SyncSettingsPage())
+          ..route('/account',
+              child: (context, state) => const AccountSyncPage())
           ..route('/bangumi/',
               child: (context, state) => const BangumiSyncPage())
           ..route('/webdav/',
@@ -94,9 +97,9 @@ final settingsModule = createModule(
       ..route(
         '/about/license',
         child: (context, state) => const LicensePage(
-          applicationName: 'Kazumi',
+          applicationName: 'FSYL TV',
           applicationVersion: ApiEndpoints.version,
-          applicationLegalese: 'Kazumi · GNU General Public License v3.0',
+          applicationLegalese: 'FSYL TV · GNU General Public License v3.0',
         ),
       )
       ..module(historyModule)
