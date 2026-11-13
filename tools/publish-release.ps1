@@ -45,7 +45,8 @@ if (-not $SkipPackage) {
 
 $assets = @(
     'dist\FSYLTV-windows-portable.zip',
-    'dist\FSYLTV-windows-setup.zip'
+    'dist\FSYLTV-windows-setup.zip',
+    'dist\FSYLTV-Setup.exe'
 ) | ForEach-Object { Join-Path $root $_ }
 foreach ($asset in $assets) {
     if (-not (Test-Path $asset)) { throw "missing release asset: $asset" }

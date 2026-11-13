@@ -54,7 +54,8 @@ if ($SkipSource) {
 
 $docs = @(
     'LICENSE', 'LICENSE-MOONTV-MIT', 'THIRD-PARTY-NOTICES.md', 'VENDOR.md',
-    'SPEC.md', 'CHANGELOG.md', 'README.md', 'KNOWN-ISSUES.md', 'PROGRESS.md'
+    'SPEC.md', 'CHANGELOG.md', 'README.md', 'HANDOVER.md',
+    'KNOWN-ISSUES.md', 'PROGRESS.md'
 )
 
 function Populate([string]$dest) {
