@@ -64,3 +64,6 @@ try {
 } finally {
     Pop-Location
 }
+
+# robocopy uses 0-7 as success codes; do not leak those as a script failure.
+exit 0
