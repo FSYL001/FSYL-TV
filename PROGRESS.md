@@ -388,3 +388,5 @@ app_exists=False data_exists=True shortcuts=False
   `弹幕设置 → 弹幕 API 凭证`，也可在构建时用 `--dart-define` 注入。
 - 图标：AppUserModelID、窗口图标、安装后 `ie4uinit` 刷新；窗口图标提取验证为
   新角色 logo。若任务栏固定项仍显示旧图，取消固定后重新固定。
+- 1.0.1：关于页“检查更新”明确读取 FSYL TV Release，更新日志按钮指向 FSYL 仓库；
+  规则管理列表改用独立 ScrollController，修复“资源”板块滚轮无法下滑。

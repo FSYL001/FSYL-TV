@@ -33,6 +33,7 @@ class PluginViewPage extends StatefulWidget {
 class _PluginViewPageState extends State<PluginViewPage> {
   PluginsController get _controller => widget.controller;
   final _search = TextEditingController();
+  final _scrollController = ScrollController();
   final Set<String> _selected = {};
   final Set<String> _updatingNames = {};
   bool _selecting = false;
@@ -50,6 +51,7 @@ class _PluginViewPageState extends State<PluginViewPage> {
   @override
   void dispose() {
     _search.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -245,6 +247,8 @@ class _PluginViewPageState extends State<PluginViewPage> {
                   final canReorder =
                       query.isEmpty && !_updatesOnly && !_selecting;
                   return ReorderableListView.builder(
+                    scrollController: _scrollController,
+                    primary: false,
                     padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
                     buildDefaultDragHandles: false,
                     proxyDecorator: (child, index, animation) => Material(

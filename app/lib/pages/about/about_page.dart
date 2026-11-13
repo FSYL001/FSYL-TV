@@ -162,9 +162,9 @@ class _ProjectHeader extends StatelessWidget {
                 style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
                 onPressed: () => openAboutLink(
                   context,
-                  'https://github.com/Predidit/Kazumi/releases',
+                  '${AppVersion.githubRepository}/releases',
                 ),
-                child: const Text('Kazumi 更新日志'),
+                child: const Text('FSYL TV 更新日志'),
               ),
             ],
           ),
