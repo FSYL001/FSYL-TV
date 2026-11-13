@@ -1,7 +1,8 @@
-"""Generate FSYL TV's original icon set.
+"""Generate FSYL TV's icon set from the user-supplied brand artwork.
 
-The mark is a rounded gradient screen with a play glyph; it deliberately does not
-reuse Kazumi's logo or MoonTV artwork. Run with Pillow installed:
+Source: app/assets/images/logo/fsyl_logo_source.png (1600x1600, white background).
+The artwork is provided by the project owner and is not upstream Kazumi/MoonTV art.
+Run with Pillow installed:
     python tools/make_icons.py
 """
 
@@ -10,26 +11,10 @@ import os
 from PIL import Image, ImageDraw
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
-TEAL = (53, 199, 178)
-INDIGO = (122, 140, 255)
-DARK = (16, 16, 20)
+SRC = os.path.join(ROOT, "app", "assets", "images", "logo", "fsyl_logo_source.png")
 
 
-def gradient(size):
-    img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
-    px = img.load()
-    for y in range(size):
-        for x in range(size):
-            t = (x + y) / (2 * (size - 1))
-            r = int(TEAL[0] + (INDIGO[0] - TEAL[0]) * t)
-            g = int(TEAL[1] + (INDIGO[1] - TEAL[1]) * t)
-            b = int(TEAL[2] + (INDIGO[2] - TEAL[2]) * t)
-            px[x, y] = (r, g, b, 255)
-    return img
-
-
-def rounded_mask(size, radius_ratio=0.23):
+def rounded_mask(size, radius_ratio=0.22):
     mask = Image.new("L", (size, size), 0)
     d = ImageDraw.Draw(mask)
     r = int(size * radius_ratio)
@@ -38,30 +23,16 @@ def rounded_mask(size, radius_ratio=0.23):
 
 
 def make_icon(size):
-    base = gradient(size)
-    base.putalpha(rounded_mask(size))
-
-    # Subtle inner highlight line.
-    d = ImageDraw.Draw(base)
-    inset = int(size * 0.085)
-    d.rounded_rectangle(
-        [inset, inset, size - inset, size - inset],
-        radius=int(size * 0.16),
-        outline=(255, 255, 255, 60),
-        width=max(1, size // 128),
-    )
-
-    # Play triangle.
-    cx, cy = size * 0.52, size * 0.5
-    s = size * 0.235
-    pts = [
-        (cx - s * 0.72, cy - s),
-        (cx - s * 0.72, cy + s),
-        (cx + s * 0.95, cy),
-    ]
-    d.polygon(pts, fill=DARK + (255,))
-
-    return base
+    img = Image.open(SRC).convert("RGBA")
+    side = min(img.size)
+    left = (img.width - side) // 2
+    top = (img.height - side) // 2
+    img = img.crop((left, top, left + side, top + side))
+    img = img.resize((size, size), Image.LANCZOS)
+    mask = rounded_mask(size)
+    out = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+    out.paste(img, (0, 0), mask)
+    return out
 
 
 def save_png(path, size):
@@ -82,6 +53,8 @@ def save_ico(path, size=256):
 
 
 def main():
+    if not os.path.exists(SRC):
+        raise SystemExit(f"missing source artwork: {SRC}")
     asset_dir = os.path.join(ROOT, "app", "assets", "images", "logo")
     save_png(os.path.join(asset_dir, "logo_rounded.png"), 512)
     save_png(os.path.join(asset_dir, "logo_android.png"), 512)

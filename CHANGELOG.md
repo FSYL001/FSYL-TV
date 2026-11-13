@@ -78,6 +78,13 @@ YYYY-MM-DD | 文件路径 | 修改内容
   FSYL TV 图标。
 - 2026-11-13 | `moonserver/public/__s1.html`、`__s2.html` | 新增阶段 1 验证用测试页
   （不影响正式页面与路由）。
+- 2026-11-13 | `app/lib/bean/dialog/exit_confirmation_dialog.dart` | 退出弹窗标题
+  Kazumi → FSYL TV。
+- 2026-11-13 | `app/lib/pages/my/my_space_view.dart` | “关于 Kazumi” → “关于 FSYL TV”。
+- 2026-11-13 | `app/lib/pages/route_error_page.dart` | 路由错误页标题 → FSYL TV。
+- 2026-11-13 | `app/assets/images/logo/fsyl_logo_source.png` 及生成的 PNG/ICO |
+  改用项目方提供的 FSYL TV 角色 logo；`tools/make_icons.py` 从该图生成全部尺寸。
+  Kazumi/MoonTV 原始 logo 文件仍保留在各自目录用于许可与来源说明，但不再作为应用图标。
 
 阶段 7 新增文件（不修改上游行为）：
 
