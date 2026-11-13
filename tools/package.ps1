@@ -102,39 +102,29 @@ Assert-LastExit 'portable zip'
 tar.exe -a -c -f $setupZip -C $setupParent '.'
 Assert-LastExit 'setup zip'
 
-# Build a real installer EXE with the 7-Zip SFX module. The archive contains
-# install.ps1 + payload; the SFX extracts to a temp dir and runs the script.
-$sevenZip = 'C:\Program Files\7-Zip\7z.exe'
-$sfxModule = 'C:\Program Files\7-Zip\7z.sfx'
+# Build a self-extracting installer EXE from a tiny C# stub plus the setup zip.
+$csc = 'C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe'
+$installerSource = Join-Path $root 'tools\installer\Installer.cs'
+$stub = Join-Path $root 'build\FSYLTV-Setup-stub.exe'
 $setupExe = Join-Path $dist 'FSYLTV-Setup.exe'
-if ((Test-Path $sevenZip) -and (Test-Path $sfxModule)) {
+if ((Test-Path $csc) -and (Test-Path $installerSource)) {
     Write-Output '=== installer exe ==='
-    $stage = Join-Path $root 'build\sfx-stage'
-    if (Test-Path $stage) { Remove-Item $stage -Recurse -Force }
-    New-Item -ItemType Directory -Force $stage | Out-Null
-    Copy-Item (Join-Path $root 'tools\install.ps1') (Join-Path $stage 'install.ps1') -Force
-    Copy-Item (Join-Path $root 'tools\uninstall.ps1') (Join-Path $stage 'uninstall.ps1') -Force
-    robocopy $payload (Join-Path $stage 'payload') /E /NFL /NDL /NJH /NJS /NP | Out-Null
-    $archive = Join-Path $root 'build\fsyl-sfx.7z'
-    Remove-Item $archive -Force -ErrorAction SilentlyContinue
-    Push-Location $stage
-    try { & $sevenZip a -t7z -mx=5 $archive '*' | Out-Null } finally { Pop-Location }
-    $config = Join-Path $root 'build\fsyl-sfx-config.txt'
-    $configText = ";!@Install@!UTF-8!`r`nTitle=`"FSYL TV`"`r`nGUIMode=`"2`"`r`nRunProgram=`"powershell.exe -NoProfile -ExecutionPolicy Bypass -File install.ps1`"`r`nDelete=`"1`"`r`n;!@InstallEnd@!`r`n"
-    [System.IO.File]::WriteAllText($config, $configText, (New-Object System.Text.UTF8Encoding($false)))
-    Remove-Item $setupExe -Force -ErrorAction SilentlyContinue
-    $out = [System.IO.File]::Create($setupExe)
+    & $csc /nologo /target:exe /out:$stub /r:System.IO.Compression.FileSystem.dll $installerSource
+    Assert-LastExit 'installer stub'
+    $stubBytes = [IO.File]::ReadAllBytes($stub)
+    $zipBytes = [IO.File]::ReadAllBytes($setupZip)
+    $out = [IO.File]::Create($setupExe)
     try {
-        foreach ($part in @($sfxModule, $config, $archive)) {
-            $input = [System.IO.File]::OpenRead($part)
-            try { $input.CopyTo($out) } finally { $input.Close() }
-        }
+        $out.Write($stubBytes, 0, $stubBytes.Length)
+        $out.Write($zipBytes, 0, $zipBytes.Length)
+        $len = [BitConverter]::GetBytes([int64]$zipBytes.Length)
+        $out.Write($len, 0, 8)
     } finally { $out.Close() }
     Write-Output "SETUP_EXE=$setupExe ($((Get-Item $setupExe).Length) bytes)"
 } else {
-    Write-Output 'WARN: 7-Zip SFX not found; installer EXE not built'
+    Write-Output 'WARN: C# installer stub not available'
 }
 
-Get-Item $portableZip, $setupZip | Select-Object FullName, Length
+Get-Item $portableZip, $setupZip, $setupExe | Select-Object FullName, Length
 Write-Output "PORTABLE=$portable"
 Write-Output "SETUP=$setupParent"
