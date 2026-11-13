@@ -377,6 +377,9 @@ app_exists=False data_exists=True shortcuts=False
   `200 image/jpeg`（25,535 bytes），安装版首页《热门电影/热门剧集》封面全部恢复。
 - 应用更新：GitHub Release `v1.0.0` 已发布；便携版/安装版资产由
   `tools/publish-release.ps1` 生成，应用内检查更新读取该 Release。
+  实测临时发布 `v1.0.1` 后启动应用，自动检查进入“正在下载更新 6.9%”；
+  测试 Release 已删除，`latest` 恢复为 `v1.0.0`。
+- 仓库：<https://github.com/FSYL001/FSYL-TV>（public，main 分支已推送）。
 - 免责声明：三处默认文案统一为
   “本网站 / APP 仅提供影视信息搜索服务……仅供交流学习 ！”。
 - 动漫规则：将当前导入的 18 条规则放入 `app/assets/rules/plugins.json`，首次启动
