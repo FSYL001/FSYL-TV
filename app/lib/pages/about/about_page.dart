@@ -6,6 +6,7 @@ import 'package:kazumi/bean/widget/content_section.dart';
 import 'package:kazumi/pages/about/about_widgets.dart';
 import 'package:kazumi/request/config/api_endpoints.dart';
 import 'package:kazumi/shell/app_paths.dart';
+import 'package:kazumi/shell/app_version.dart';
 
 class AboutPage extends StatelessWidget {
   const AboutPage({super.key, required this.onCheckUpdate});
@@ -140,7 +141,7 @@ class _ProjectHeader extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            '上游 Kazumi ${ApiEndpoints.version}',
+            'FSYL TV ${AppVersion.current} · 上游 Kazumi ${ApiEndpoints.version}',
             style: theme.textTheme.bodyMedium?.copyWith(
               color: colors.onSurfaceVariant,
             ),

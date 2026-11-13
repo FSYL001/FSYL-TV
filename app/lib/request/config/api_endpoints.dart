@@ -1,4 +1,5 @@
 import 'package:flutter/services.dart' show appBuildName;
+import 'package:kazumi/shell/app_version.dart';
 
 class ApiEndpoints {
   /// 当前版本
@@ -27,16 +28,14 @@ class ApiEndpoints {
   static const String gitcodeMirror =
       'https://raw.gitcode.com/gh_mirrors/ka/KazumiRules/raw/main/';
 
-  /// 在线升级
-  static const String latestApp =
-      'https://api.github.com/repos/Predidit/Kazumi/releases/latest';
+  /// 在线升级：FSYL TV 自己的 GitHub Releases
+  static const String latestApp = AppVersion.latestReleaseApi;
 
   /// Bangumi 镜像测试后端
   static const String bangumiMirrorDomain = 'https://api.kazumi.fyi';
 
-  /// Kazumi 镜像后端应用更新
-  static const String latestAppMirror =
-      '$bangumiMirrorDomain/kazumi/v1/app/latest';
+  /// Kazumi 镜像后端应用更新（FSYL TV 不再使用，保留兼容）
+  static const String latestAppMirror = AppVersion.latestReleaseApi;
 
   /// 弹弹官网
   static const String dandanIndex = 'https://www.dandanplay.com/';

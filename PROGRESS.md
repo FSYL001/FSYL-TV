@@ -365,3 +365,21 @@ app_exists=False data_exists=True shortcuts=False
 
 阶段 8 完成：便携版与按用户安装版均可运行，sidecar 使用 `app\moon\node.exe` +
 `app\moon\server\server.js`，强杀主程序后无孤儿进程；GPL 源码包随包提供。
+
+## 阶段 9 — GitHub、更新与体验修复（完成）
+
+- 仓库：`https://github.com/FSYL001/FSYL-TV`（public，GPL-3.0，含全部源码）。
+- 应用更新：启动自动检查 + 关于页手动检查 GitHub Releases；仅 Windows
+  `FSYLTV-windows-portable.zip`，下载后等待退出、覆盖程序目录并重启，data 保留。
+  发布脚本 `tools/publish-release.ps1` 生成 tag/Release。
+- 影视首页封面：新增本地 `/api/image-proxy`，默认注入 `RUNTIME_CONFIG.IMAGE_PROXY`；
+  Douban 封面带 `Referer: https://movie.douban.com/`。实测代理返回
+  `200 image/jpeg`（25,535 bytes），首页封面恢复。
+- 免责声明：三处默认文案统一为
+  “本网站 / APP 仅提供影视信息搜索服务……仅供交流学习 ！”。
+- 动漫规则：将当前导入的 18 条规则放入 `app/assets/rules/plugins.json`，首次启动
+  复制到 `data\anime\plugins\v2`；已有文件不覆盖，规则商店/更新逻辑保持可用。
+- 弹幕：定位为 DanDanPlay API 需要 AppId/AppKey；新增设置页
+  `弹幕设置 → 弹幕 API 凭证`，也可在构建时用 `--dart-define` 注入。
+- 图标：AppUserModelID、窗口图标、安装后 `ie4uinit` 刷新；窗口图标提取验证为
+  新角色 logo。若任务栏固定项仍显示旧图，取消固定后重新固定。

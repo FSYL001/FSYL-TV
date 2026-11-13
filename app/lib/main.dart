@@ -23,6 +23,7 @@ import 'package:kazumi/bean/dialog/dialog_helper.dart';
 import 'package:kazumi/navigation.dart';
 import 'package:kazumi/shell/app_config.dart';
 import 'package:kazumi/shell/app_paths.dart';
+import 'package:kazumi/shell/default_rules.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -54,6 +55,7 @@ void main() async {
     if (!GStorage.getSetting(SettingsKeys.shortcutDialogShown)) {
       await GStorage.putSetting(SettingsKeys.shortcutDialogShown, true);
     }
+    await DefaultRules.ensureSeeded();
   } catch (e) {
     debugPrint('Storage initialization failed: $e');
 

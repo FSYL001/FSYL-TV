@@ -45,7 +45,10 @@
 
 ## 功能范围
 
-7. **云同步未实现**：账号页只保存本地配置，`pull/push` 为空实现，不发请求。
+7. **弹幕需要 DanDanPlay 凭证**：官方构建通过 `--dart-define=DANDANAPI_APPID/KEY`
+   注入；本地构建默认没有密钥，弹幕接口会 403。可在“弹幕设置 → 弹幕 API 凭证”
+   填写自己的 AppId/AppKey（申请：https://doc.dandanplay.com/open/）。
+8. **云同步未实现**：账号页只保存本地配置，`pull/push` 为空实现，不发请求。
 8. **安装包未签名**：阶段 8 提供按用户的 PowerShell 安装/卸载脚本与 ZIP，
    没有代码签名证书；Windows SmartScreen 可能提示未知发布者。
 9. **Kazumi 引导页默认跳过**：为避免用户可见 Kazumi 品牌，首次启动直接进入首页；

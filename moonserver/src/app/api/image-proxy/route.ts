@@ -1,61 +1,90 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
-export const runtime = 'edge';
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
-// OrionTV 兼容接口
-export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const imageUrl = searchParams.get('url');
+const UA =
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 ' +
+  '(KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
 
-  if (!imageUrl) {
-    return NextResponse.json({ error: 'Missing image URL' }, { status: 400 });
+function isPrivateHost(hostname: string): boolean {
+  const host = hostname.toLowerCase().replace(/^\[|\]$/g, '');
+  if (
+    host === 'localhost' ||
+    host.endsWith('.local') ||
+    host === '::1' ||
+    host.startsWith('127.') ||
+    host.startsWith('10.') ||
+    host.startsWith('192.168.') ||
+    host.startsWith('169.254.')
+  ) {
+    return true;
+  }
+  const m = /^172\.(\d+)\./.exec(host);
+  return m !== null && Number(m[1]) >= 16 && Number(m[1]) <= 31;
+}
+
+/**
+ * Local image proxy for Douban/TMDB posters. Douban rejects hot-linked images
+ * without a movie.douban.com Referer, which is why home-page covers were blank
+ * while search results (other hosts) worked.
+ */
+export async function GET(request: NextRequest) {
+  const target = request.nextUrl.searchParams.get('url');
+  if (!target) {
+    return new NextResponse('missing url', { status: 400 });
+  }
+
+  let url: URL;
+  try {
+    url = new URL(target);
+  } catch {
+    return new NextResponse('invalid url', { status: 400 });
+  }
+
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+    return new NextResponse('unsupported protocol', { status: 400 });
+  }
+  if (isPrivateHost(url.hostname)) {
+    return new NextResponse('host not allowed', { status: 403 });
+  }
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 15000);
+  const headers: Record<string, string> = {
+    'User-Agent': UA,
+    Accept: 'image/avif,image/webp,image/apng,image/*,*/*;q=0.8',
+  };
+  if (/(^|\.)doubanio\.com$|(^|\.)douban\.com$/i.test(url.hostname)) {
+    headers.Referer = 'https://movie.douban.com/';
   }
 
   try {
-    const imageResponse = await fetch(imageUrl, {
+    const response = await fetch(url, {
+      headers,
+      redirect: 'follow',
+      signal: controller.signal,
+      cache: 'no-store',
+    });
+    if (!response.ok) {
+      return new NextResponse(null, { status: response.status });
+    }
+    const contentType = response.headers.get('content-type') || '';
+    if (!contentType.toLowerCase().startsWith('image/')) {
+      return new NextResponse('not an image', { status: 415 });
+    }
+    const body = await response.arrayBuffer();
+    return new NextResponse(body, {
+      status: 200,
       headers: {
-        Referer: 'https://movie.douban.com/',
-        'User-Agent':
-          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+        'Content-Type': contentType,
+        'Cache-Control': 'public, max-age=86400, stale-while-revalidate=604800',
+        'Access-Control-Allow-Origin': '*',
       },
     });
-
-    if (!imageResponse.ok) {
-      return NextResponse.json(
-        { error: imageResponse.statusText },
-        { status: imageResponse.status }
-      );
-    }
-
-    const contentType = imageResponse.headers.get('content-type');
-
-    if (!imageResponse.body) {
-      return NextResponse.json(
-        { error: 'Image response has no body' },
-        { status: 500 }
-      );
-    }
-
-    // 创建响应头
-    const headers = new Headers();
-    if (contentType) {
-      headers.set('Content-Type', contentType);
-    }
-
-    // 设置缓存头（可选）
-    headers.set('Cache-Control', 'public, max-age=15720000, s-maxage=15720000'); // 缓存半年
-    headers.set('CDN-Cache-Control', 'public, s-maxage=15720000');
-    headers.set('Vercel-CDN-Cache-Control', 'public, s-maxage=15720000');
-
-    // 直接返回图片流
-    return new Response(imageResponse.body, {
-      status: 200,
-      headers,
-    });
-  } catch (error) {
-    return NextResponse.json(
-      { error: 'Error fetching image' },
-      { status: 500 }
-    );
+  } catch {
+    return new NextResponse('upstream fetch failed', { status: 502 });
+  } finally {
+    clearTimeout(timer);
   }
 }

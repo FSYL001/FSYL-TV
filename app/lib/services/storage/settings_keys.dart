@@ -206,6 +206,16 @@ class SettingsKeys {
     true,
     group: SettingGroup.danmaku,
   );
+  static const dandanAppId = SettingKey<String>(
+    'dandanAppId',
+    '',
+    group: SettingGroup.danmaku,
+  );
+  static const dandanAppKey = SettingKey<String>(
+    'dandanAppKey',
+    '',
+    group: SettingGroup.danmaku,
+  );
   static const danmakuFontWeight = SettingKey<int>(
     _SettingBoxKey.danmakuFontWeight,
     4,

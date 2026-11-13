@@ -58,8 +58,21 @@ powershell -ExecutionPolicy Bypass -File tools\elevated-build.ps1
 powershell -ExecutionPolicy Bypass -File tools\package.ps1
 ```
 
-产物在 `dist\`：`FSYLTV-portable.zip`、`FSYLTV-Setup.zip`。
+产物在 `dist\`：`FSYLTV-windows-portable.zip`、`FSYLTV-windows-setup.zip`。
 `source\FSYLTV-source.zip` 是 GPL-3.0 要求的完整源码存档（`git archive HEAD`）。
+
+## 发布与应用内更新
+
+应用内更新读取 GitHub Release：<https://github.com/FSYL001/FSYL-TV/releases>。
+发布新版本：
+
+1. 修改 `app/lib/shell/app_version.dart` 的 `current`（例如 `1.0.1`）并提交；
+2. 运行 `powershell -ExecutionPolicy Bypass -File tools\publish-release.ps1 -Version 1.0.1`；
+3. 脚本会打 tag、推送、打包并创建带 `FSYLTV-windows-portable.zip` 的 Release。
+
+启动时会自动检查（可在“更新设置”关闭）；“关于 → 检查更新”可手动检查，
+下载完成后点“立即安装”，应用会退出并由更新脚本替换文件后重启。
+更新只覆盖程序目录，`%LOCALAPPDATA%\FSYLTV\data` 不受影响。
 
 ## 许可证与源码
 

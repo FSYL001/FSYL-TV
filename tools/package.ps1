@@ -94,8 +94,8 @@ Copy-Item (Join-Path $root 'tools\install.ps1') (Join-Path $setupParent 'install
 Copy-Item (Join-Path $root 'tools\uninstall.ps1') (Join-Path $setupParent 'uninstall.ps1') -Force
 
 Write-Output '=== zip ==='
-$portableZip = Join-Path $dist 'FSYLTV-portable.zip'
-$setupZip = Join-Path $dist 'FSYLTV-Setup.zip'
+$portableZip = Join-Path $dist 'FSYLTV-windows-portable.zip'
+$setupZip = Join-Path $dist 'FSYLTV-windows-setup.zip'
 Remove-Item $portableZip, $setupZip -Force -ErrorAction SilentlyContinue
 tar.exe -a -c -f $portableZip -C $portableParent 'FSYLTV'
 Assert-LastExit 'portable zip'

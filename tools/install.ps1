@@ -56,3 +56,7 @@ Set-ItemProperty -Path $uninstallKey -Name UninstallString -Value "powershell.ex
 Write-Host ''
 Write-Host 'Installed. Launch from Start Menu or Desktop (FSYL TV).'
 Write-Host 'Run uninstall.ps1 to remove; you will be asked whether to keep records.'
+
+# Refresh the shell icon cache so the new exe/shortcut icon is visible without
+# requiring the user to sign out.
+try { & ie4uinit.exe -show } catch {}

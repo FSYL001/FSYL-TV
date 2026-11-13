@@ -194,6 +194,13 @@ class _DanmakuSettingsPageState extends State<DanmakuSettingsPage> {
                 title: Text('弹弹play'),
                 initialValue: danmakuDanDanSource,
               ),
+              SettingsTile(
+                leading: Icons.key_rounded,
+                title: const Text('弹幕 API 凭证'),
+                onPressed: (_) {
+                  context.pushNamed('/settings/danmaku/api');
+                },
+              ),
             ],
           ),
           SettingsSection(

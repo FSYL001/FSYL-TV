@@ -12,6 +12,8 @@ import 'package:kazumi/services/update/update_download_source.dart';
 import 'package:kazumi/services/update/update_downloader.dart';
 import 'package:kazumi/services/storage/storage.dart';
 import 'package:kazumi/shell/app_paths.dart';
+import 'package:kazumi/shell/app_version.dart';
+import 'package:kazumi/shell/windows_portable_update.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:kazumi/utils/device.dart';
@@ -91,7 +93,7 @@ List<String> getUpdateFilePatterns(InstallationType installationType) {
     case InstallationType.windowsMsix:
       return ['windows', '.msix'];
     case InstallationType.windowsPortable:
-      return ['windows', '.zip'];
+      return ['windows', 'portable', '.zip'];
     case InstallationType.macosDmg:
       return ['macos', '.dmg'];
     case InstallationType.androidApk:
@@ -115,7 +117,8 @@ class AutoUpdater {
 
   List<InstallationType> _detectAvailableInstallationTypes() {
     if (Platform.isWindows) {
-      return [InstallationType.windowsMsix, InstallationType.windowsPortable];
+      // FSYL TV ships a per-user portable ZIP; no MSIX artifact.
+      return [InstallationType.windowsPortable];
     }
     if (Platform.isLinux) {
       return [InstallationType.linuxDeb, InstallationType.linuxTar];
@@ -134,8 +137,9 @@ class AutoUpdater {
         throw Exception('无效的响应数据');
       }
 
-      final remoteVersion = data['tag_name'] as String;
-      final currentVersion = ApiEndpoints.version;
+      final remoteVersion =
+          (data['tag_name'] as String).replaceFirst(RegExp(r'^[vV]'), '');
+      final currentVersion = AppVersion.current;
 
       if (needUpdate(currentVersion, remoteVersion)) {
         final availableTypes = _detectAvailableInstallationTypes();
@@ -439,7 +443,11 @@ class AutoUpdater {
             throw 'Could not launch $fileUri';
           }
         } else {
-          await Process.start('explorer.exe', [filePath], runInShell: true);
+          final started = await WindowsPortableUpdate.install(filePath);
+          if (!started) {
+            KazumiDialog.showToast(message: '更新包解压失败，请稍后重试');
+            return;
+          }
         }
         await Future.delayed(const Duration(seconds: 1));
         await AppExit.quit();

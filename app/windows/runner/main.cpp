@@ -1,7 +1,10 @@
 #include <flutter/dart_project.h>
 #include <flutter/flutter_view_controller.h>
 #include <windows.h>
+#include <shobjidl.h>
 #include <app_links/app_links_plugin_c_api.h>
+
+#pragma comment(lib, "shell32.lib")
 
 #include "flutter_window.h"
 #include "utils.h"
@@ -81,6 +84,10 @@ bool isSingleInstance()
 int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
                       _In_ wchar_t *command_line, _In_ int show_command)
 {
+  // Use a stable AppUserModelID so the taskbar groups under FSYL TV's own icon
+  // instead of inheriting a cached icon from an older build.
+  SetCurrentProcessExplicitAppUserModelID(L"FSYLTV.FSYLTV.1");
+
   // Make sure the application is a single instance.
   // This is important for the application to work correctly with the local storage.
   if (!isSingleInstance())

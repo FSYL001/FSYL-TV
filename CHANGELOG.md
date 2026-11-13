@@ -68,6 +68,25 @@ YYYY-MM-DD | 文件路径 | 修改内容
   使用新的 FSYL TV 图标。
 - 2026-11-13 | `tools/elevated-build.ps1`、`tools/patch-webview-nuget.js` | 构建前跳过
   webview_windows 已完成的 NuGet 还原，避免受限构建账户读取 NuGet 配置失败。
+- 2026-11-13 | `moonserver/src/app/api/image-proxy/route.ts` | 新增本地图片代理解析
+  （Douban/TMDB 封面带正确 Referer；拒绝内网地址）。修复首页封面空白、搜索结果正常的问题。
+- 2026-11-13 | `moonserver/src/app/layout.tsx`、`src/components/SiteProvider.tsx`、
+  `src/lib/config.ts` | 默认启用 `/api/image-proxy?url=`；免责声明新增 “/ APP” 与
+  “仅供交流学习 ！”。
+- 2026-11-13 | `app/assets/rules/plugins.json`、`app/lib/shell/default_rules.dart` |
+  首次启动导入当前 18 条动漫规则；已存在时不覆盖，规则商店仍可检查/更新。
+- 2026-11-13 | `app/lib/shell/app_version.dart`、`app/lib/services/update/auto_updater.dart`、
+  `app/lib/shell/windows_portable_update.dart`、`app/lib/request/config/api_endpoints.dart` |
+  应用更新改为读取 GitHub `FSYL001/FSYL-TV` Release；便携 ZIP 下载后由脚本
+  等待进程退出、覆盖程序目录并重启；数据目录不变。
+- 2026-11-13 | `app/lib/pages/settings/danmaku/danmaku_api_page.dart`、
+  `settings_keys.dart`、`utils/crypto.dart`、`pages/settings/danmaku/*` | 新增
+  DanDanPlay AppId/AppKey 设置页；构建时未注入凭据时可在设置中填写。
+- 2026-11-13 | `app/windows/runner/main.cpp` | 设置 AppUserModelID，避免任务栏沿用旧图标；
+  `tools/install.ps1` 安装后刷新 shell 图标缓存。
+- 2026-11-13 | `tools/package.ps1`、`tools/publish-release.ps1` | 发布资产改名为
+  `FSYLTV-windows-portable.zip` / `FSYLTV-windows-setup.zip`；新增一键打 tag、
+  推送并创建 GitHub Release 的脚本。
 - 2026-11-13 | `app/lib/main.dart` | 首次启动默认跳过 Kazumi 引导页与桌面快捷方式弹窗
   （避免用户可见 Kazumi 品牌；许可证与免责声明仍在关于页与 assets/statements 保留）。
 - 2026-11-13 | `app/lib/pages/about/about_page.dart` | 关于页改为 FSYL TV，新增上游

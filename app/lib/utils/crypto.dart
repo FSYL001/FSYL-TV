@@ -2,12 +2,15 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:crypto/crypto.dart';
+import 'package:kazumi/services/storage/storage.dart';
 import 'package:kazumi/utils/bangumi_mirror_credentials.dart';
 import 'package:kazumi/utils/dandan_credentials.dart';
 
 String generateDandanSignature(String path, int timestamp) {
-  final id = dandanCredentials['id']!;
-  final value = dandanCredentials['value']!;
+  final storedId = GStorage.getSetting(SettingsKeys.dandanAppId).trim();
+  final storedKey = GStorage.getSetting(SettingsKeys.dandanAppKey).trim();
+  final id = storedId.isNotEmpty ? storedId : dandanCredentials['id']!;
+  final value = storedKey.isNotEmpty ? storedKey : dandanCredentials['value']!;
   final data = id + timestamp.toString() + path + value;
   final bytes = utf8.encode(data);
   final digest = sha256.convert(bytes);
