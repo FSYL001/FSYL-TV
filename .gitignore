@@ -1,0 +1,49 @@
+# ---- Flutter / Dart ----
+build/
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub/
+.pub-cache/
+*.iml
+.idea/
+.vs/
+*.suo
+*.user
+*.lock.bak
+app/windows/flutter/ephemeral/
+app/build/
+app/.dart_tool/
+
+# ---- Next.js / Node ----
+node_modules/
+.next/
+out/
+dist/
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.eslintcache
+*.tsbuildinfo
+
+# ---- Secrets / local config ----
+.env
+.env.*
+!.env.example
+
+# ---- Build / packaging outputs ----
+artifacts/
+release/
+tools/.cache/
+.upstream/
+*.msix
+*.msi
+*.wixpdb
+
+# ---- OS / editor ----
+Thumbs.db
+Desktop.ini
+.DS_Store
+*.log
