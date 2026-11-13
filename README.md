@@ -248,7 +248,7 @@ powershell -ExecutionPolicy Bypass -File tools\publish-release.ps1 -Version 1.0.
 
 ### Gitee 镜像
 
-仓库地址：<https://gitee.com/FSYL001/FSYL-TV>
+仓库地址：<https://gitee.com/FSYL001/FSYL-TV>（源码镜像，可能同步滞后；Release 以 GitHub 为准）
 
 镜像推送需要 Gitee 私人访问令牌（`projects` 权限）：
 
