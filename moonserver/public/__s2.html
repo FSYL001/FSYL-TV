@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<title>FSYL S2 scroll test</title>
+<style>
+  html, body { margin: 0; background: #0f1115; color: #e6e6ea; font: 14px/1.5 system-ui, sans-serif; }
+  header { position: sticky; top: 0; background: #1a1d24; padding: 14px 24px; border-bottom: 1px solid #2a2e38; }
+  h1 { font-size: 18px; margin: 0; }
+  .list { padding: 16px 24px 80px; }
+  .row { height: 64px; margin-bottom: 10px; border-radius: 10px; background: #1d212a;
+         display: flex; align-items: center; padding: 0 18px; gap: 14px; }
+  .num { color: #35c7b2; font-weight: 700; width: 52px; }
+  .bar { height: 10px; border-radius: 5px; background: #2c3240; flex: 1; }
+</style>
+</head>
+<body>
+<header><h1>FSYL TV · S2 滚动保持测试页</h1></header>
+<div class="list" id="list"></div>
+<script>
+  const list = document.getElementById('list');
+  let html = '';
+  for (let i = 1; i <= 200; i++) {
+    html += `<div class="row"><span class="num">${String(i).padStart(3, '0')}</span>` +
+            `<span class="bar" style="max-width:${120 + (i * 37) % 520}px"></span>` +
+            `<span>测试条目 ${i}</span></div>`;
+  }
+  list.innerHTML = html;
+  window.__s2 = { scrollY: () => window.scrollY, items: 200 };
+</script>
+</body>
+</html>

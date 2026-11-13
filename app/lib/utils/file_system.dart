@@ -1,11 +1,10 @@
 import 'dart:io';
 
 import 'package:path/path.dart' as path;
-import 'package:path_provider/path_provider.dart';
+import 'package:kazumi/shell/app_paths.dart';
 
 Future<String> getDefaultDownloadDirectory() async {
-  final appSupport = await getApplicationSupportDirectory();
-  return path.join(appSupport.path, 'downloads');
+  return path.join(AppPaths.instance.animeDir, 'downloads');
 }
 
 Future<void> ensureDirectoryWritable(String directoryPath) async {

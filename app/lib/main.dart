@@ -4,7 +4,6 @@ import 'package:kazumi/app_module.dart';
 import 'package:kazumi/app_widget.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:kazumi/bean/settings/theme_provider.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:kazumi/services/deep_links/app_deep_links.dart';
 import 'package:kazumi/services/storage/storage.dart';
 import 'package:kazumi/services/download/download_directory_service.dart';
@@ -19,10 +18,11 @@ import 'package:window_manager/window_manager.dart';
 import 'package:kazumi/pages/error/storage_error_page.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:kazumi/utils/device.dart';
-import 'package:kazumi/services/platform/desktop_window_config.dart';
 import 'package:kazumi/services/platform/webview_feature_service.dart';
 import 'package:kazumi/bean/dialog/dialog_helper.dart';
 import 'package:kazumi/navigation.dart';
+import 'package:kazumi/shell/app_config.dart';
+import 'package:kazumi/shell/app_paths.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -43,9 +43,17 @@ void main() async {
   }
 
   try {
-    final hivePath = '${(await getApplicationSupportDirectory()).path}/hive';
+    // FSYL TV: all writable data lives under AppPaths.dataRoot.
+    await AppPaths.instance.init();
+    final hivePath = '${AppPaths.instance.animeDir}/hive';
     await Hive.initFlutter(hivePath);
     await GStorage.init();
+    if (!GStorage.getSetting(SettingsKeys.onboardingCompleted)) {
+      await GStorage.putSetting(SettingsKeys.onboardingCompleted, true);
+    }
+    if (!GStorage.getSetting(SettingsKeys.shortcutDialogShown)) {
+      await GStorage.putSetting(SettingsKeys.shortcutDialogShown, true);
+    }
   } catch (e) {
     debugPrint('Storage initialization failed: $e');
 
@@ -72,23 +80,27 @@ void main() async {
     return;
   }
   await DownloadDirectoryService().restoreAccess();
-  final showWindowButton = DesktopWindowConfig.showWindowButton;
   if (isDesktop()) {
     await windowManager.ensureInitialized();
     final lowResolution = await isLowResolution();
+    final fsylConfig = await AppConfig.load();
+    final configuredSize = (fsylConfig.width >= 800 && fsylConfig.height >= 600)
+        ? Size(fsylConfig.width, fsylConfig.height)
+        : (lowResolution ? const Size(840, 600) : const Size(1280, 860));
     final windowOptions = WindowOptions(
-      size: lowResolution ? const Size(840, 600) : const Size(1280, 860),
+      size: configuredSize,
       center: true,
       skipTaskbar: false,
-      // macOS embeds native buttons in the Flutter view.
-      titleBarStyle: (Platform.isMacOS || !showWindowButton)
+      // FSYL TV draws its own title bar; no native caption buttons.
+      titleBarStyle: (Platform.isMacOS || Platform.isWindows)
           ? TitleBarStyle.hidden
           : TitleBarStyle.normal,
-      windowButtonVisibility: showWindowButton,
-      title: 'Kazumi',
+      windowButtonVisibility: false,
+      title: 'FSYL TV',
     );
     windowManager.waitUntilReadyToShow(windowOptions, () async {
       // window_manager controls desktop visibility to avoid startup flicker.
+      await windowManager.setMinimumSize(const Size(980, 640));
       await windowManager.show();
       await windowManager.focus();
     });

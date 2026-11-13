@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:kazumi/shell/app_paths.dart';
 
 import 'package:kazumi/bean/widget/error_widget.dart';
 import 'package:kazumi/bean/widget/loading_indicator.dart';
@@ -18,7 +18,7 @@ class StorageErrorPage extends StatelessWidget {
         title: const Text('内部错误'),
       ),
       body: FutureBuilder<Directory>(
-        future: getApplicationSupportDirectory(),
+        future: Future.value(Directory(AppPaths.instance.dataRoot)),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.done) {
             final path = snapshot.data?.path ?? '未知路径';

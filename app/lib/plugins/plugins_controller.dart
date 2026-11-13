@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'dart:convert';
 import 'package:mobx/mobx.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:kazumi/shell/app_paths.dart';
 import 'package:kazumi/plugins/plugins.dart';
 import 'package:kazumi/services/plugin/plugin_validity_tracker.dart';
 import 'package:kazumi/request/apis/plugin_catalog_api.dart';
@@ -100,8 +100,7 @@ abstract class _PluginsController with Store {
   File? _pluginsFile;
 
   Future<void> init() async {
-    final supportDirectory = await getApplicationSupportDirectory();
-    final legacyDirectory = Directory('${supportDirectory.path}/plugins');
+    final legacyDirectory = Directory('${AppPaths.instance.animeDir}/plugins');
     final directory = Directory('${legacyDirectory.path}/v2');
     await directory.create(recursive: true);
     KazumiLogger().i('Plugins Directory: ${directory.path}');

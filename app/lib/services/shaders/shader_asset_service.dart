@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:flutter/services.dart' show rootBundle, AssetManifest;
 import 'package:kazumi/services/logging/logger.dart';
 import 'package:path/path.dart' as path;
-import 'package:path_provider/path_provider.dart';
+import 'package:kazumi/shell/app_paths.dart';
 
 class ShaderAssetService {
   late Directory shadersDirectory;
@@ -11,8 +11,8 @@ class ShaderAssetService {
   Future<void> copyShadersToExternalDirectory() async {
     final assetManifest = await AssetManifest.loadFromAssetBundle(rootBundle);
     final assets = assetManifest.listAssets();
-    final directory = await getApplicationSupportDirectory();
-    shadersDirectory = Directory(path.join(directory.path, 'anime_shaders'));
+    final directory = Directory('${AppPaths.instance.cacheDir}/anime_shaders');
+    shadersDirectory = directory;
 
     if (!await shadersDirectory.exists()) {
       await shadersDirectory.create(recursive: true);

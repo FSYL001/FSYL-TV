@@ -18,6 +18,7 @@ import 'package:kazumi/navigation.dart';
 import 'package:kazumi/utils/constants.dart';
 import 'package:kazumi/utils/device.dart';
 import 'package:kazumi/utils/theme.dart';
+import 'package:kazumi/shell/shell.dart';
 
 class AppWidget extends StatefulWidget {
   const AppWidget({super.key});
@@ -282,7 +283,7 @@ class _AppWidgetState extends State<AppWidget>
             : dynamicDarkTheme;
 
         return MaterialApp.router(
-          title: "Kazumi",
+          title: "FSYL TV",
           localizationsDelegates: GlobalMaterialLocalizations.delegates,
           supportedLocales: const [
             Locale.fromSubtags(
@@ -295,6 +296,12 @@ class _AppWidgetState extends State<AppWidget>
           themeMode: themeProvider.themeMode,
           scaffoldMessengerKey: rootScaffoldMessengerKey,
           routerConfig: ModularApp.routerConfigOf(context),
+          builder: (context, child) {
+            if (!Platform.isWindows) {
+              return child ?? const SizedBox.shrink();
+            }
+            return FsylShell(animeChild: child);
+          },
         );
       },
     );

@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:path/path.dart' as path;
-import 'package:path_provider/path_provider.dart';
+import 'package:kazumi/shell/app_paths.dart';
 
 String decodeVideoSource(String iframeUrl) {
   final decodedUrl = Uri.decodeFull(iframeUrl);
@@ -36,7 +36,8 @@ int extractEpisodeNumber(String input) {
 }
 
 Future<String> getPlayerTempPath() async {
-  final directory = await getTemporaryDirectory();
+  final directory = Directory('${AppPaths.instance.cacheDir}/player');
+  await directory.create(recursive: true);
   return directory.path;
 }
 

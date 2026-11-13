@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<title>FSYL S1 HLS 1080p test</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #000; color: #fff; }
+  #v { width: 100vw; height: 100vh; object-fit: contain; background: #000; }
+  #hud { position: fixed; left: 12px; top: 12px; font: 12px/1.5 Consolas, monospace;
+         background: rgba(0,0,0,.55); padding: 8px 10px; border-radius: 6px; }
+</style>
+</head>
+<body>
+<video id="v" muted autoplay playsinline></video>
+<div id="hud">starting…</div>
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1.6.6/dist/hls.min.js"></script>
+<script>
+  const stats = {
+    frames: 0, total: 0, dropped: 0, vw: 0, vh: 0, playing: false,
+    level: '', currentLevel: '', buffer: 0, error: null, hlsFatal: false,
+    restarts: 0, startedAt: Date.now()
+  };
+  window.__s1 = stats;
+  window.__s1pause = () => { const v = document.getElementById('v'); v.pause(); v.muted = true; };
+  const v = document.getElementById('v');
+  const src = 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8';
+
+  function frame(now, meta) {
+    stats.frames++;
+    if (v.videoWidth) { stats.vw = v.videoWidth; stats.vh = v.videoHeight; }
+    stats.playing = !v.paused;
+    v.requestVideoFrameCallback(frame);
+  }
+  if ('requestVideoFrameCallback' in v) v.requestVideoFrameCallback(frame);
+
+  if (window.Hls && Hls.isSupported()) {
+    const hls = new Hls({ enableWorker: true, lowLatencyMode: false, capLevelToPlayerSize: false });
+    window.__s1hls = hls;
+    hls.loadSource(src);
+    hls.attachMedia(v);
+    hls.on(Hls.Events.MANIFEST_PARSED, () => {
+      stats.level = hls.levels.map((l) => `${l.width}x${l.height}`).join(',');
+      if (hls.levels.length) hls.currentLevel = hls.levels.length - 1;
+      v.play().catch((e) => { stats.error = String(e); });
+    });
+    hls.on(Hls.Events.LEVEL_SWITCHED, (e, data) => {
+      const l = hls.levels[data.level];
+      stats.currentLevel = l ? `${l.width}x${l.height}` : String(data.level);
+    });
+    hls.on(Hls.Events.ERROR, (e, data) => {
+      if (data.fatal) { stats.hlsFatal = true; stats.error = data.details; }
+    });
+    document.addEventListener('visibilitychange', () => {
+      stats.visible = !document.hidden;
+    });
+  } else {
+    stats.error = 'hls.js not available';
+  }
+
+  setInterval(() => {
+    try {
+      const q = v.getVideoPlaybackQuality ? v.getVideoPlaybackQuality() : {};
+      stats.total = q.totalVideoFrames || 0;
+      stats.dropped = q.droppedVideoFrames || 0;
+      stats.vw = v.videoWidth;
+      stats.vh = v.videoHeight;
+      stats.playing = !v.paused;
+      stats.buffer = v.buffered.length ? v.buffered.end(v.buffered.length - 1) : 0;
+    } catch (e) { stats.error = String(e); }
+    document.getElementById('hud').textContent =
+      `${stats.vw}x${stats.vh} total=${stats.total} dropped=${stats.dropped} ` +
+      `playing=${stats.playing} level=${stats.currentLevel || stats.level} ` +
+      `buffer=${stats.buffer.toFixed(1)}s fps_frames=${stats.frames}`;
+  }, 500);
+</script>
+</body>
+</html>

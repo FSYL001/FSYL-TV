@@ -4,7 +4,7 @@ import 'dart:io';
 
 import 'package:logger/logger.dart';
 import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
+import 'package:kazumi/shell/app_paths.dart';
 import 'package:synchronized/synchronized.dart';
 
 const Symbol _forceLogKey = #_forceLog;
@@ -100,8 +100,7 @@ class KazumiLogOutput extends LogOutput {
   static Future<String> _getLogFilePath() async {
     if (_logFilePath != null) return _logFilePath!;
 
-    final dir = (await getApplicationSupportDirectory()).path;
-    final logDir = p.join(dir, "logs");
+    final logDir = AppPaths.instance.logsDir;
     final directory = Directory(logDir);
     if (!await directory.exists()) {
       await directory.create(recursive: true);
@@ -219,8 +218,7 @@ class KazumiLogger {
 }
 
 Future<File> getLogsPath() async {
-  final dir = (await getApplicationSupportDirectory()).path;
-  final logDir = p.join(dir, "logs");
+  final logDir = AppPaths.instance.logsDir;
   final filename = p.join(logDir, "kazumi_logs.log");
 
   final directory = Directory(logDir);

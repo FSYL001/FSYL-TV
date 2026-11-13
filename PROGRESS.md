@@ -140,3 +140,176 @@ moon_node_left=0
 阶段 2 完成：MoonTV 可独立构建与启动，无密码本机模式、健康检查、就绪握手、
 优雅退出与残留进程清理均通过真实命令验证；服务端不参与 localstorage 记录存储。
 未改动播放器或视频流。
+
+## 阶段 1 — 三个验证（完成，S1 判定通过）
+
+环境：Windows 11 25H2、WebView2 Runtime 157.0.4341.46、Flutter 3.50.0、
+VS 2022 Build Tools（MSVC 14.44）、Node 22.13。测量对象为最终架构中的
+WebView2（Texture 渲染，非子窗口）。
+
+### S1：1080p HLS 播放
+
+测试流：`https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8`，页面内嵌 hls.js 1.6.6，
+强制最高码率。数据来自应用自身 `data\logs\s1.log` 与 Windows `GPU Engine` 性能计数器。
+
+```
+1920x1080, 0 dropped frames, playing=true
+level=320x184,512x288,848x480,1280x720,1920x1080
+frames: 301 -> 1020（持续增长，约 60fps）
+GPU（本应用进程）：19.9% / 21.2% / 20.7%（3 次 1s 采样）
+CPU（kazumi+node+本应用 WebView2）：3.03 core-seconds / 4s
+切到动漫后（隐藏）：
+GPU（本应用进程）：0% / 0% / 0%
+CPU（本应用进程）：1.0 core-seconds / 4s
+```
+
+结论：可以播放、无掉帧、GPU 在切走后回落（本应用渲染进程 0%）。
+未触发方案 A/B（不需要改成原生子窗口，也不需要降到 720p）。
+
+说明：插件原生的 `suspend()` 会关闭 Graphics Capture item，`resume()` 后捕获
+不再恢复，画面定格。因此隐藏时改为“JS 暂停音视频 + 捕获帧率降到 1fps”，
+保留捕获会话；实测 GPU 回落到本应用 0%。该取舍记入 KNOWN-ISSUES。
+
+### S2：列表页 ↔ WebView2 来回切 20 次
+
+使用可滚动测试页（200 条），脚本自动循环 20 次（每次动漫 330ms、影视 520ms），
+每 220ms 抓取窗口截图，共 83 帧；同时读取滚动位置。
+
+```
+S2 cycle=1..20: scroll_before=420 scroll_after=420（20/20 全部保持）
+frames=83, 亮度 min=15.7 max=34.9
+black_frames(mean<12)=0
+最大帧间差=20.75（页面内容整体切换，无半透明叠影）
+动画侧与影视侧截图均正常，标题栏胶囊状态正确
+```
+
+结论：20 次来回切换无黑屏、无残影、滚动位置完全保持。用户手动复现的
+“切回影视卡住”已定位为原生 suspend/resume 缺陷，改用降帧方案后修复
+（切回后 HUD 与页面继续刷新，视频按需求停在原帧）。
+
+### S3：假 sidecar 生命周期
+
+```
+$ flutter test test\shell\moon_sidecar_test.dart
+[moon] --- starting sidecar on port 9988 ---
+[moon] FSYLTV_READY 9988
+[moon] shutdown response 200
+00:00 +1: All tests passed!
+test exit=0
+node leftovers: 0
+```
+
+结论：启动子进程 → 读握手行 → 健康检查 → 关闭后无残留进程，全部通过。
+
+## 阶段 3 — 外壳与切换（完成）
+
+- 单窗口：Flutter runner 唯一顶层窗口；影视 WebView2 以 Flutter Texture 合成，
+  不是额外子窗口。
+- 启动页：两张卡片（影视/动漫），显示 FSYL TV；记住上次板块。
+- 顶部常驻胶囊切换器，200ms 指示器滑动 + 200ms 内容淡入；两个板块用
+  `IndexedStack` 常驻，切换只改索引。
+- 切走动漫：`ShellBridge.animeActive=false`，播放器暂停；切回不自动恢复。
+- 切走影视：JS `pause()+muted=true`，捕获帧率降到 1fps；切回恢复帧率并停在原帧。
+- 无边框窗口 + 自绘标题栏（拖动/双击最大化/最小化/托盘/关闭）；
+  窗口尺寸、位置、最大化状态与上次板块写入 `data\config\window.json`、`app.json`。
+- 托盘沿用上游 tray_manager，图标/提示/菜单已换为 FSYL TV。
+
+构建验收：`flutter build windows --release` → `Built ...\Release\kazumi.exe`，
+启动后 stderr 仅 Flutter 常规警告，无未捕获异常。
+
+## 阶段 4 — 目录收敛（完成）
+
+- `AppPaths` 单例提供全部路径：`data\{config,account,anime,movie,cache,logs}`；
+  不可写时回退 `%TEMP%\FSYLTV\data` 并显示提示。
+- 代码内 `path_provider` 使用点已全部移除：
+  `grep -r "path_provider|getApplicationSupportDirectory|getTemporaryDirectory" app/lib` → 0 条。
+- Hive → `data\anime\hive`；插件 → `data\anime\plugins`；下载 → `data\anime\downloads`；
+  着色器 → `data\cache\anime_shaders`；图片缓存 → `data\cache\images`；
+  播放器/更新/WebDAV 临时文件 → `data\cache\...`；日志 → `data\logs`。
+- WebView2 user data folder 显式设为 `data\movie`；实测生成 `data\movie\EBWebView`。
+
+清空数据目录后首次启动，实际生成的顶层目录（原文）：
+
+```
+account
+anime
+cache
+config
+logs
+movie
+```
+
+没有散落目录；`config` 下只有 `app.json`、`window.json`、`moon.pid.json`。
+
+## 阶段 5 — sidecar 生命周期（完成）
+
+- 探测空闲端口 → 启动 `node.exe server.js` → 读 `FSYLTV_READY <port>`（20s 超时）
+  → `/api/health` 校验 → 加载页面。
+- 退出先 `POST /__shutdown`，1.5s 未退再 `taskkill /PID <pid> /T /F`；
+  pid 文件记录 PID/启动时间/命令行，启动时三者吻合才清理残留。
+- Job Object（`JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE`）绑定 sidecar。实测强杀主程序：
+
+```
+SIDECAR_PID=35072
+sidecar_before_kill=True
+--- kill main process (simulated crash) ---
+sidecar_after_kill=False
+```
+
+- 影视 sidecar 失败/退出时 MoviePage 显示错误页与“重启影视模块”按钮；
+  动漫板块不受影响。
+
+## 阶段 6 — 品牌与关于页（完成）
+
+用户可见文案/素材替换：
+
+- 窗口标题、标题栏、托盘提示/菜单、启动页、关于页标题 → FSYL TV。
+- 应用图标（窗口/托盘/安装包）、MoonTV `logo.png`/`favicon.ico`/PWA 图标
+  用 `tools/make_icons.py` 生成的独立图标替换（渐变屏 + 播放符号）。
+- MoonTV 站点名/标题/PWA manifest → FSYL TV（构建时注入 `NEXT_PUBLIC_SITE_NAME`）。
+- 关于页写明：上游项目名、仓库链接、许可证、一句“基于其修改而来”、
+  完整源码入口（安装目录 `source\FSYLTV-source.zip`）。
+- 默认字体改为系统字体（不再默认使用 MiSans）；上游字体文件与 LICENSE 原样保留。
+- 上游版权头、LICENSE、`assets/statements` 免责声明均未删除。
+
+grep 审计（保留项）：`assets/statements/`、LICENSE、api user-agent、
+上游仓库地址、`package:kazumi` import 路径均保留。
+
+## 阶段 7 — 账号骨架与同步切面（完成）
+
+- Dart：`AccountService`（登录态、DPAPI 加密 token、设备 ID、服务器地址、
+  两个开关），`SyncAdapter` 两模块空壳，`SyncService`；未登录时立即返回，
+  不产生网络请求。
+- 设置页：`同步设置` 新增“账号与云同步”卡片 → `/settings/account`，
+  显示“本地离线模式”，服务器/账号/密码三个输入框 + 两个开关，只存本地。
+- DPAPI 测试：
+
+```
+$ flutter test test\shell\account_service_test.dart
+00:00 +1: All tests passed!
+test exit=0
+```
+
+- `loggedIn` 只出现在 `shell/account/account_service.dart` 与
+  `shell/sync/sync_adapter.dart`，业务代码中无该判断。
+- MoonTV：先写方案 `moonserver/src/lib/sync/README.md`，再新增
+  `types.ts` / `envelope.ts` / `adapter.ts`；用独立键 `fsyltv_sync_meta_v1`
+  记录 `updatedAt/isDeleted/dirty`，不修改现有数据键与读写路径。
+  `pnpm typecheck` → exit 0；未登录行为与原版一致，不发请求。
+
+## 阶段 8 — 打包（完成）
+
+- `tools/build-moonserver.ps1`：pnpm build → standalone 整理（static/public）→
+  包装入口脚本 → 复制 node.exe 到 `app\moon\`。
+- `tools/package.ps1`：Flutter release 构建（提权）→ sidecar → 便携版与安装版
+  两套产物 → `source\FSYLTV-source.zip`（GPL 源码）→ 两个 ZIP。
+- `tools/install.ps1` / `tools/uninstall.ps1`：按用户安装到
+  `%LOCALAPPDATA%\FSYLTV\app`，创建开始菜单/桌面快捷方式与卸载项；
+  卸载询问是否保留 `data`。
+- 构建与产物验收输出见本节下方（打包执行后追加）。
+
+实际产物：
+
+```
+（待追加）
+```

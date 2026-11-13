@@ -22,6 +22,7 @@ import 'package:kazumi/pages/download/download_controller.dart';
 import 'package:kazumi/services/player/audio_controller.dart';
 import 'package:kazumi/utils/async_session.dart';
 import 'package:kazumi/utils/device.dart';
+import 'package:kazumi/shell/shell_bridge.dart';
 
 export 'package:kazumi/pages/player/controller/player_models.dart';
 
@@ -35,6 +36,13 @@ class PlayerController implements Disposable {
       isLocalPlayback: () => isLocalPlayback,
       downloadController: downloadController,
     );
+    // FSYL TV shell integration: pause when the anime module is switched away.
+    ShellBridge.animeActive.addListener(_onShellAnimeActiveChanged);
+  }
+
+  void _onShellAnimeActiveChanged() {
+    if (ShellBridge.animeActive.value) return;
+    unawaited(pause(enableSync: false));
   }
 
   final ShaderAssetService shaderAssetService;
@@ -395,6 +403,7 @@ class PlayerController implements Disposable {
   /// method returns.
   void beginShutdown() {
     _initializations.close();
+    ShellBridge.animeActive.removeListener(_onShellAnimeActiveChanged);
     if (_shutdownFuture != null) {
       return;
     }

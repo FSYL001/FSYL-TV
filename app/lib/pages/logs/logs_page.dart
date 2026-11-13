@@ -3,7 +3,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:kazumi/shell/app_paths.dart';
 
 import 'package:kazumi/bean/dialog/dialog_helper.dart';
 import 'package:kazumi/bean/settings/settings_detail_scaffold.dart';
@@ -124,9 +124,8 @@ class _LogsPageState extends State<LogsPage> {
   }
 
   Future<File> _getLogsFile() async {
-    final directory = await getApplicationSupportDirectory();
-    final path = directory.path;
-    return File('$path/logs/kazumi_logs.log');
+    final path = AppPaths.instance.logsDir;
+    return File('$path/kazumi_logs.log');
   }
 
   Future<void> _clearLogs() async {

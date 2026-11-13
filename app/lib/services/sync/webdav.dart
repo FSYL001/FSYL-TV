@@ -1,6 +1,6 @@
 import 'dart:io';
 import 'package:webdav_client/webdav_client.dart' as webdav;
-import 'package:path_provider/path_provider.dart';
+import 'package:kazumi/shell/app_paths.dart';
 import 'package:kazumi/modules/history/history_sync.dart';
 import 'package:kazumi/modules/danmaku/danmaku_shield_sync.dart';
 import 'package:kazumi/services/storage/storage.dart';
@@ -44,8 +44,7 @@ class WebDav {
 
   Future<void> _init() async {
     initialized = false;
-    var directory = await getApplicationSupportDirectory();
-    webDavLocalTempDirectory = Directory('${directory.path}/webdavTemp');
+    webDavLocalTempDirectory = Directory('${AppPaths.instance.cacheDir}/webdavTemp');
     webDavURL = GStorage.getSetting(SettingsKeys.webDavURL);
     webDavUsername = GStorage.getSetting(SettingsKeys.webDavUsername);
     webDavPassword = GStorage.getSetting(SettingsKeys.webDavPassword);
@@ -143,8 +142,7 @@ class WebDav {
   }
 
   Future<void> _updateBox(String boxName) async {
-    var directory = await getApplicationSupportDirectory();
-    final localFilePath = '${directory.path}/hive/$boxName.hive';
+    final localFilePath = '${AppPaths.instance.animeDir}/hive/$boxName.hive';
     final tempFilePath = '${webDavLocalTempDirectory.path}/$boxName.tmp';
     final webDavPath = '$_syncRootPath/$boxName.tmp';
     await File(localFilePath).copy(tempFilePath);

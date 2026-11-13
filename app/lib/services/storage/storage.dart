@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'package:hive_ce/hive.dart';
 import 'package:kazumi/services/logging/logger.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:kazumi/shell/app_paths.dart';
 import 'package:kazumi/modules/bangumi/bangumi_item.dart';
 import 'package:kazumi/hive_registrar.g.dart';
 import 'package:kazumi/modules/history/history_module.dart';
@@ -145,7 +145,9 @@ class GStorage {
   }
 
   static Future init() async {
-    _hivePath = '${(await getApplicationSupportDirectory()).path}/hive';
+    // FSYL TV: Hive lives under data\anime (SPEC §2/§5).
+    _hivePath = '${AppPaths.instance.animeDir}/hive';
+    await Directory(_hivePath!).create(recursive: true);
 
     Hive.registerAdapters();
 
@@ -214,8 +216,7 @@ class GStorage {
   }
 
   static Future<void> backupBox(String boxName, String backupFilePath) async {
-    final appDocumentDir = await getApplicationSupportDirectory();
-    final hiveBoxFile = File('${appDocumentDir.path}/hive/$boxName.hive');
+    final hiveBoxFile = File('$_hivePath/$boxName.hive');
     if (await hiveBoxFile.exists()) {
       await hiveBoxFile.copy(backupFilePath);
       KazumiLogger().i('GStorage: backup success: $backupFilePath');

@@ -3,7 +3,7 @@ import 'dart:io';
 import 'dart:isolate';
 
 import 'package:flutter/foundation.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:kazumi/shell/app_paths.dart';
 
 import 'package:kazumi/modules/history/history_module.dart';
 import 'package:kazumi/modules/history/history_sync.dart';
@@ -17,7 +17,8 @@ class HistorySyncService {
   static const String _pendingLogPrefix = 'history.local.pending.';
 
   HistorySyncService._internal()
-      : _applicationSupportDirectoryProvider = getApplicationSupportDirectory;
+      : _applicationSupportDirectoryProvider =
+            (() async => Directory(AppPaths.instance.animeDir));
 
   static final HistorySyncService _instance = HistorySyncService._internal();
 

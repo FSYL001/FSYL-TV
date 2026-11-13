@@ -11,8 +11,8 @@ import 'package:kazumi/services/platform/app_exit.dart';
 import 'package:kazumi/services/update/update_download_source.dart';
 import 'package:kazumi/services/update/update_downloader.dart';
 import 'package:kazumi/services/storage/storage.dart';
+import 'package:kazumi/shell/app_paths.dart';
 import 'package:open_filex/open_filex.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:kazumi/utils/device.dart';
 import 'package:kazumi/utils/version.dart';
@@ -410,7 +410,8 @@ class AutoUpdater {
 
   Future<String> _downloadFile(String url, String version, String expectedHash,
       CancelToken cancelToken) async {
-    final tempDir = await getTemporaryDirectory();
+    final tempDir = Directory('${AppPaths.instance.cacheDir}/update');
+    await tempDir.create(recursive: true);
     return downloadUpdateFile(
       url: url,
       filePath: '${tempDir.path}/${_getFileNameFromUrl(url, version)}',

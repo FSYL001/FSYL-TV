@@ -3,13 +3,12 @@ import 'dart:io';
 import 'package:flutter/painting.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
+import 'package:kazumi/shell/app_paths.dart';
 
 class ImageCacheService {
   Stream<File> _files() async* {
-    final temporary = await getTemporaryDirectory();
     final directory =
-        Directory(p.join(temporary.path, DefaultCacheManager.key));
+        Directory(p.join(AppPaths.instance.cacheDir, 'images', DefaultCacheManager.key));
     if (!await directory.exists()) return;
     yield* directory
         .list(recursive: true, followLinks: false)
