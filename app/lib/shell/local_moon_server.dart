@@ -44,6 +44,28 @@ class LocalMoonServer {
   bool _starting = false;
   final List<MovieSource> _sources = [];
 
+  static final List<MovieSource> _defaultSources = [
+    MovieSource(key: 'jisu', name: '极速资源', api: 'https://jszyapi.com/api.php/provide/vod'),
+    MovieSource(key: 'lzi', name: '量子资源站', api: 'https://cj.lziapi.com/api.php/provide/vod'),
+    MovieSource(key: 'ffzy', name: '非凡影视', api: 'http://ffzy5.tv/api.php/provide/vod'),
+    MovieSource(key: 'bfzy', name: '暴风资源', api: 'https://bfzyapi.com/api.php/provide/vod'),
+    MovieSource(key: 'tyyszy', name: '天涯资源', api: 'https://tyyszy.com/api.php/provide/vod'),
+    MovieSource(key: 'heimuer', name: '黑木耳', api: 'https://json.heimuer.xyz/api.php/provide/vod'),
+    MovieSource(key: 'dyttzy', name: '电影天堂资源', api: 'http://caiji.dyttzyapi.com/api.php/provide/vod'),
+    MovieSource(key: 'zy360', name: '360资源', api: 'https://360zy.com/api.php/provide/vod'),
+    MovieSource(key: 'maotaizy', name: '茅台资源', api: 'https://caiji.maotaizy.cc/api.php/provide/vod'),
+    MovieSource(key: 'wolong', name: '卧龙资源', api: 'https://wolongzyw.com/api.php/provide/vod'),
+    MovieSource(key: 'dbzy', name: '豆瓣资源', api: 'https://dbzy.tv/api.php/provide/vod'),
+    MovieSource(key: 'mozhua', name: '魔爪资源', api: 'https://mozhuazy.com/api.php/provide/vod'),
+    MovieSource(key: 'mdzy', name: '魔都资源', api: 'https://www.mdzyapi.com/api.php/provide/vod'),
+    MovieSource(key: 'zuid', name: '最大资源', api: 'https://api.zuidapi.com/api.php/provide/vod'),
+    MovieSource(key: 'yinghua', name: '樱花资源', api: 'https://m3u8.apiyhzy.com/api.php/provide/vod'),
+    MovieSource(key: 'wujin', name: '无尽资源', api: 'https://api.wujinapi.me/api.php/provide/vod'),
+    MovieSource(key: 'wwzy', name: '旺旺短剧', api: 'https://wwzy.tv/api.php/provide/vod'),
+    MovieSource(key: 'ikun', name: 'iKun资源', api: 'https://ikunzyapi.com/api.php/provide/vod'),
+    MovieSource(key: 'xiaomaomi', name: '小猫咪资源', api: 'https://zy.xmm.hk/api.php/provide/vod'),
+  ];
+
   static const List<String> _yellowWords = [
     '伦理片', '福利', '里番动漫', '门事件', '萝莉少女', '制服诱惑',
     '国产传媒', 'cosplay', '黑丝诱惑', '无码', '日本无码', '有码',
@@ -133,21 +155,26 @@ class LocalMoonServer {
   void _loadSources(String siteDir) {
     _sources.clear();
     final configFile = File(p.join(siteDir, 'config.json'));
-    if (!configFile.existsSync()) return;
-
-    try {
-      final json = jsonDecode(configFile.readAsStringSync()) as Map<String, dynamic>;
-      final apiSites = json['api_site'] as Map<String, dynamic>?;
-      if (apiSites != null) {
-        apiSites.forEach((k, v) {
-          if (v is Map<String, dynamic>) {
-            _sources.add(MovieSource.fromJson(k, v));
-          }
-        });
+    if (configFile.existsSync()) {
+      try {
+        final json = jsonDecode(configFile.readAsStringSync()) as Map<String, dynamic>;
+        final apiSites = json['api_site'] as Map<String, dynamic>?;
+        if (apiSites != null) {
+          apiSites.forEach((k, v) {
+            if (v is Map<String, dynamic>) {
+              _sources.add(MovieSource.fromJson(k, v));
+            }
+          });
+        }
+        debugPrint('Loaded ${_sources.length} movie sources from config.json');
+      } catch (e) {
+        debugPrint('Failed to load sources from config.json: $e');
       }
-      debugPrint('Loaded ${_sources.length} movie sources from config.json');
-    } catch (e) {
-      debugPrint('Failed to load sources from config.json: $e');
+    }
+
+    if (_sources.isEmpty) {
+      _sources.addAll(_defaultSources);
+      debugPrint('Populated ${_sources.length} default movie sources');
     }
   }
 
@@ -198,6 +225,18 @@ class LocalMoonServer {
 
       if (path == '/api/search') {
         await _handleSearch(request, params);
+        return;
+      }
+
+      if (path == '/api/search/resources') {
+        res.statusCode = HttpStatus.ok;
+        res.headers.contentType = ContentType.json;
+        res.write(jsonEncode(_sources.map((s) => {
+          'key': s.key,
+          'name': s.name,
+          'api': s.api,
+        }).toList()));
+        await res.close();
         return;
       }
 
@@ -400,10 +439,14 @@ class LocalMoonServer {
       return;
     }
 
-    final client = HttpClient()..connectionTimeout = const Duration(seconds: 8);
+    final client = HttpClient()
+      ..connectionTimeout = const Duration(seconds: 6)
+      ..badCertificateCallback = ((X509Certificate cert, String host, int port) => true);
+    client.maxConnectionsPerHost = 5;
+
     final futures = _sources.map((src) => _fetchSearchFromSource(client, src, query));
     final searchResults = await Future.wait(futures);
-    client.close();
+    client.close(force: true);
 
     final flattened = <Map<String, dynamic>>[];
     for (final list in searchResults) {
@@ -429,25 +472,30 @@ class LocalMoonServer {
     String query,
   ) async {
     try {
-      final searchUrl = '${source.api}?wd=${Uri.encodeComponent(query)}';
+      final searchUrl = '${source.api}?ac=videolist&wd=${Uri.encodeComponent(query)}';
       final req = await client.getUrl(Uri.parse(searchUrl));
-      req.headers.set('User-Agent', 'Mozilla/5.0 FSYLTV/1.0');
+      req.headers.set('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/122.0.0.0 Safari/537.36');
       req.headers.set('Accept', 'application/json, text/plain, */*');
-      final resp = await req.close().timeout(const Duration(seconds: 7));
+      final resp = await req.close().timeout(const Duration(seconds: 5));
       if (resp.statusCode != HttpStatus.ok) return [];
 
       final body = await utf8.decodeStream(resp);
       final json = jsonDecode(body) as Map<String, dynamic>;
       final list = json['list'] as List<dynamic>?;
-      if (list == null) return [];
+      if (list == null || list.isEmpty) return [];
 
       return list.map((item) {
         final playUrl = item['vod_play_url']?.toString() ?? '';
-        final episodes = _extractM3u8(playUrl);
+        final playFrom = item['vod_play_from']?.toString() ?? '';
+        final episodes = _extractEpisodes(playUrl, playFrom);
         final rawPic = item['vod_pic']?.toString() ?? '';
         final poster = (rawPic.contains('doubanio.com') || rawPic.contains('douban.com'))
             ? _wrapPosterUrl(rawPic)
             : rawPic;
+        final rawYear = item['vod_year']?.toString() ?? '';
+        final yearMatch = RegExp(r'\d{4}').firstMatch(rawYear);
+        final year = yearMatch?.group(0) ?? (rawYear.isNotEmpty ? rawYear : 'unknown');
+
         return {
           'id': item['vod_id']?.toString() ?? '',
           'title': (item['vod_name']?.toString() ?? '').replaceAll(RegExp(r'\s+'), ' ').trim(),
@@ -456,8 +504,8 @@ class LocalMoonServer {
           'source': source.key,
           'source_name': source.name,
           'class': item['vod_class']?.toString() ?? '',
-          'year': item['vod_year']?.toString() ?? '',
-          'desc': item['vod_content']?.toString() ?? '',
+          'year': year,
+          'desc': (item['vod_content']?.toString() ?? '').replaceAll(RegExp(r'<[^>]*>'), '').trim(),
           'type_name': item['type_name']?.toString() ?? '',
           'douban_id': item['vod_douban_id'],
         };
@@ -494,9 +542,11 @@ class LocalMoonServer {
       return;
     }
 
-    final client = HttpClient()..connectionTimeout = const Duration(seconds: 8);
+    final client = HttpClient()
+      ..connectionTimeout = const Duration(seconds: 6)
+      ..badCertificateCallback = ((X509Certificate cert, String host, int port) => true);
     final results = await _fetchSearchFromSource(client, target, query);
-    client.close();
+    client.close(force: true);
 
     final matched = results.where((r) => r['title'] == query).toList();
     res.statusCode = HttpStatus.ok;
@@ -532,32 +582,51 @@ class LocalMoonServer {
       return;
     }
 
-    final client = HttpClient()..connectionTimeout = const Duration(seconds: 8);
+    final client = HttpClient()
+      ..connectionTimeout = const Duration(seconds: 8)
+      ..badCertificateCallback = ((X509Certificate cert, String host, int port) => true);
+
     try {
-      final detailUrl = '${target.api}?ac=detail&ids=$id';
-      final req = await client.getUrl(Uri.parse(detailUrl));
-      final resp = await req.close();
-      final body = await utf8.decodeStream(resp);
-      final json = jsonDecode(body) as Map<String, dynamic>;
-      final list = json['list'] as List<dynamic>?;
+      List<dynamic>? list;
+      for (final path in ['?ac=videolist&ids=$id', '?ac=detail&ids=$id']) {
+        try {
+          final detailUrl = '${target.api}$path';
+          final req = await client.getUrl(Uri.parse(detailUrl));
+          req.headers.set('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/122.0.0.0 Safari/537.36');
+          req.headers.set('Accept', 'application/json, text/plain, */*');
+          final resp = await req.close().timeout(const Duration(seconds: 6));
+          if (resp.statusCode == HttpStatus.ok) {
+            final body = await utf8.decodeStream(resp);
+            final json = jsonDecode(body) as Map<String, dynamic>;
+            list = json['list'] as List<dynamic>?;
+            if (list != null && list.isNotEmpty) break;
+          }
+        } catch (_) {}
+      }
+
       if (list != null && list.isNotEmpty) {
         final item = list[0] as Map<String, dynamic>;
         final playUrl = item['vod_play_url']?.toString() ?? '';
-        final episodes = _extractM3u8(playUrl);
+        final playFrom = item['vod_play_from']?.toString() ?? '';
+        final episodes = _extractEpisodes(playUrl, playFrom);
         final rawPic = item['vod_pic']?.toString() ?? '';
         final poster = (rawPic.contains('doubanio.com') || rawPic.contains('douban.com'))
             ? _wrapPosterUrl(rawPic)
             : rawPic;
+        final rawYear = item['vod_year']?.toString() ?? '';
+        final yearMatch = RegExp(r'\d{4}').firstMatch(rawYear);
+        final year = yearMatch?.group(0) ?? (rawYear.isNotEmpty ? rawYear : 'unknown');
+
         final result = {
           'id': item['vod_id']?.toString() ?? id,
-          'title': item['vod_name']?.toString() ?? '',
+          'title': (item['vod_name']?.toString() ?? '').replaceAll(RegExp(r'\s+'), ' ').trim(),
           'poster': poster,
           'episodes': episodes,
           'source': target.key,
           'source_name': target.name,
           'class': item['vod_class']?.toString() ?? '',
-          'year': item['vod_year']?.toString() ?? '',
-          'desc': item['vod_content']?.toString() ?? '',
+          'year': year,
+          'desc': (item['vod_content']?.toString() ?? '').replaceAll(RegExp(r'<[^>]*>'), '').trim(),
           'type_name': item['type_name']?.toString() ?? '',
         };
         res.statusCode = HttpStatus.ok;
@@ -576,18 +645,76 @@ class LocalMoonServer {
     await res.close();
   }
 
-  List<String> _extractM3u8(String raw) {
-    if (raw.isEmpty) return [];
-    final regex = RegExp(r'\$(https?://[^"''\s]+?\.m3u8)');
-    final parts = raw.split(r'$$$');
-    List<String> episodes = [];
-    for (final part in parts) {
-      final matches = regex.allMatches(part).map((m) => m.group(1)!).toList();
-      if (matches.length > episodes.length) {
-        episodes = matches;
+  List<String> _extractEpisodes(String playUrl, [String? playFrom]) {
+    if (playUrl.trim().isEmpty) return [];
+
+    final tracks = playUrl.split(r'$$$');
+    final froms = (playFrom != null && playFrom.isNotEmpty)
+        ? playFrom.split(r'$$$')
+        : <String>[];
+
+    int bestTrackIndex = 0;
+    int maxScore = -1;
+
+    for (int i = 0; i < tracks.length; i++) {
+      final track = tracks[i];
+      final from = (i < froms.length) ? froms[i].toLowerCase() : '';
+      int score = 0;
+
+      if (from.contains('m3u8')) score += 100;
+      if (track.contains('.m3u8')) score += 50;
+      if (from.contains('mp4')) score += 20;
+
+      final epCount = track.split('#').length;
+      score += epCount;
+
+      if (score > maxScore) {
+        maxScore = score;
+        bestTrackIndex = i;
       }
     }
-    return episodes.toSet().toList();
+
+    final selectedTrack = tracks[bestTrackIndex];
+    final epParts = selectedTrack.split('#');
+    final List<String> result = [];
+
+    for (final ep in epParts) {
+      if (ep.trim().isEmpty) continue;
+      String url = '';
+      if (ep.contains(r'$')) {
+        final sub = ep.split(r'$');
+        for (int j = sub.length - 1; j >= 0; j--) {
+          final candidate = sub[j].trim();
+          if (candidate.startsWith('http://') || candidate.startsWith('https://')) {
+            url = candidate;
+            break;
+          }
+        }
+      } else {
+        final match = RegExp(r'https?://[^\s#"]+').firstMatch(ep);
+        if (match != null) {
+          url = match.group(0)!;
+        }
+      }
+
+      if (url.isNotEmpty) {
+        final parenIndex = url.indexOf('(');
+        if (parenIndex > 0) {
+          url = url.substring(0, parenIndex);
+        }
+        result.add(url.trim());
+      }
+    }
+
+    // 若未解析出任何有效链接，降级使用正则全量捕获
+    if (result.isEmpty) {
+      final matches = RegExp(r'https?://[^\s#"]+?\.m3u8(?:[^\s#"]*)?').allMatches(playUrl);
+      for (final m in matches) {
+        result.add(m.group(0)!);
+      }
+    }
+
+    return result.toSet().toList();
   }
 
   Future<void> _serveStaticFile(HttpRequest request) async {
