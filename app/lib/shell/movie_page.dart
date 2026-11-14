@@ -233,6 +233,20 @@ class MoviePageState extends State<MoviePage> with AutomaticKeepAliveClientMixin
     }
   }
 
+  Future<bool> canGoBack() async {
+    if (Platform.isWindows) {
+      return false;
+    }
+    return (await _androidController?.canGoBack()) ?? false;
+  }
+
+  Future<void> goBack() async {
+    if (Platform.isWindows) {
+      return;
+    }
+    await _androidController?.goBack();
+  }
+
   Future<String?> evalScript(String script) async {
     try {
       if (Platform.isWindows) {

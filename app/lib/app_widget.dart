@@ -271,9 +271,6 @@ class _AppWidgetState extends State<AppWidget>
           scaffoldMessengerKey: rootScaffoldMessengerKey,
           routerConfig: ModularApp.routerConfigOf(context),
           builder: (context, child) {
-            if (!Platform.isWindows) {
-              return child ?? const SizedBox.shrink();
-            }
             return FsylShell(animeChild: child);
           },
         );

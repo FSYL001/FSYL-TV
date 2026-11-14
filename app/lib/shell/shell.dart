@@ -359,84 +359,101 @@ class _FsylShellState extends State<FsylShell>
     final topInset = isDesktop() ? 0.0 : MediaQuery.of(context).padding.top;
     final effectiveTitleHeight = _titleBarHeight + topInset;
 
-    return Scaffold(
-      backgroundColor: const Color(0xFF101014),
-      body: Stack(
-        children: [
-          Positioned.fill(
-            child: _entered
-                ? Padding(
-                    padding: EdgeInsets.only(
-                      top: _isFullScreen ? 0 : effectiveTitleHeight,
-                    ),
-                    child: FadeTransition(
-                      opacity: Tween<double>(begin: 0.72, end: 1).animate(
-                        CurvedAnimation(
-                          parent: _switchFade,
-                          curve: Curves.easeOutCubic,
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        if (!_entered) {
+          exit(0);
+        }
+        if (_index == 1) {
+          final movieState = _movieKey.currentState;
+          if (movieState != null && await movieState.canGoBack()) {
+            await movieState.goBack();
+            return;
+          }
+        }
+        _handleExitRequest();
+      },
+      child: Scaffold(
+        backgroundColor: const Color(0xFF101014),
+        body: Stack(
+          children: [
+            Positioned.fill(
+              child: _entered
+                  ? Padding(
+                      padding: EdgeInsets.only(
+                        top: _isFullScreen ? 0 : effectiveTitleHeight,
+                      ),
+                      child: FadeTransition(
+                        opacity: Tween<double>(begin: 0.72, end: 1).animate(
+                          CurvedAnimation(
+                            parent: _switchFade,
+                            curve: Curves.easeOutCubic,
+                          ),
+                        ),
+                        child: IndexedStack(
+                          index: _index,
+                          children: _buildChildren(),
                         ),
                       ),
-                      child: IndexedStack(
-                        index: _index,
-                        children: _buildChildren(),
-                      ),
-                    ),
-                  )
-                : const SizedBox.shrink(),
-          ),
-          if (_entered && !_isFullScreen)
-            Positioned(
-              left: 0,
-              right: 0,
-              top: 0,
-              height: effectiveTitleHeight,
-              child: _TitleBar(
-                activeIndex: _index,
-                onSwitch: _switchTo,
-                onMinimizeToTray: () {
-                  if (isDesktop()) windowManager.hide();
-                },
-                onMinimize: () {
-                  if (isDesktop()) windowManager.minimize();
-                },
-                onMaximize: _toggleMaximize,
-                onClose: () => _handleExitRequest(),
-              ),
+                    )
+                  : const SizedBox.shrink(),
             ),
-          if (_showLaunch)
-            Positioned.fill(
-              child: IgnorePointer(
-                ignoring: _entered,
-                child: AnimatedOpacity(
-                  opacity: _entered ? 0 : 1,
-                  duration: const Duration(milliseconds: 240),
-                  child: _LaunchPage(
-                    lastModule: _config.lastModule,
-                    onSelect: _enterModule,
+            if (_entered && !_isFullScreen)
+              Positioned(
+                left: 0,
+                right: 0,
+                top: 0,
+                height: effectiveTitleHeight,
+                child: _TitleBar(
+                  activeIndex: _index,
+                  onSwitch: _switchTo,
+                  onMinimizeToTray: () {
+                    if (isDesktop()) windowManager.hide();
+                  },
+                  onMinimize: () {
+                    if (isDesktop()) windowManager.minimize();
+                  },
+                  onMaximize: _toggleMaximize,
+                  onClose: () => _handleExitRequest(),
+                ),
+              ),
+            if (_showLaunch)
+              Positioned.fill(
+                child: IgnorePointer(
+                  ignoring: _entered,
+                  child: AnimatedOpacity(
+                    opacity: _entered ? 0 : 1,
+                    duration: const Duration(milliseconds: 240),
+                    child: _LaunchPage(
+                      lastModule: _config.lastModule,
+                      onSelect: _enterModule,
+                    ),
                   ),
                 ),
               ),
-            ),
-          if (_exitOverlayVisible)
-            Positioned.fill(
-              child: Stack(
-                children: [
-                  ModalBarrier(
-                    color: Colors.black54,
-                    dismissible: true,
-                    onDismiss: () =>
-                        setState(() => _exitOverlayVisible = false),
-                  ),
-                  Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: ExitConfirmationDialog(onResult: _onExitResult),
+            if (_exitOverlayVisible)
+              Positioned.fill(
+                child: Stack(
+                  children: [
+                    ModalBarrier(
+                      color: Colors.black54,
+                      dismissible: true,
+                      onDismiss: () =>
+                          setState(() => _exitOverlayVisible = false),
                     ),
-                  ),
-                ],
+                    Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: ExitConfirmationDialog(onResult: _onExitResult),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -745,54 +762,76 @@ class _LaunchPage extends StatelessWidget {
           colors: [Color(0xFF1D1D24), Color(0xFF0D0D11)],
         ),
       ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _BrandMark(size: 44),
-              SizedBox(width: 16),
-              Text(
-                'FSYL TV',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 36,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 1.2,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          const Text(
-            '本地单窗口影视客户端',
-            style: TextStyle(color: Color(0xFF8D8D99), fontSize: 13),
-          ),
-          const SizedBox(height: 44),
-          Row(
+      child: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+          child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _LaunchCard(
-                title: '影视',
-                subtitle: 'MoonTV · 本地服务',
-                icon: Icons.movie_outlined,
-                accent: const Color(0xFFF0A23C),
-                highlight: lastModule == 'movie',
-                onTap: () => onSelect(1),
+              const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _BrandMark(size: 44),
+                  SizedBox(width: 16),
+                  Text(
+                    'FSYL TV',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 36,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(width: 24),
-              _LaunchCard(
-                title: '动漫',
-                subtitle: '动漫 · 规则采集',
-                icon: Icons.auto_awesome_motion_outlined,
-                accent: const Color(0xFF35C7B2),
-                highlight: lastModule == 'anime',
-                onTap: () => onSelect(0),
+              const SizedBox(height: 10),
+              const Text(
+                '本地单窗口影视客户端',
+                style: TextStyle(color: Color(0xFF8D8D99), fontSize: 13),
+              ),
+              const SizedBox(height: 36),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final isNarrow = constraints.maxWidth < 520;
+                  final cards = [
+                    _LaunchCard(
+                      title: '影视',
+                      subtitle: 'MoonTV · 本地服务',
+                      icon: Icons.movie_outlined,
+                      accent: const Color(0xFFF0A23C),
+                      highlight: lastModule == 'movie',
+                      isNarrow: isNarrow,
+                      onTap: () => onSelect(1),
+                    ),
+                    SizedBox(
+                      width: isNarrow ? 0 : 24,
+                      height: isNarrow ? 16 : 0,
+                    ),
+                    _LaunchCard(
+                      title: '动漫',
+                      subtitle: '动漫 · 规则采集',
+                      icon: Icons.auto_awesome_motion_outlined,
+                      accent: const Color(0xFF35C7B2),
+                      highlight: lastModule == 'anime',
+                      isNarrow: isNarrow,
+                      onTap: () => onSelect(0),
+                    ),
+                  ];
+                  if (isNarrow) {
+                    return Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: cards,
+                    );
+                  }
+                  return Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: cards,
+                  );
+                },
               ),
             ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -806,6 +845,7 @@ class _LaunchCard extends StatefulWidget {
     required this.accent,
     required this.highlight,
     required this.onTap,
+    this.isNarrow = false,
   });
 
   final String title;
@@ -814,6 +854,7 @@ class _LaunchCard extends StatefulWidget {
   final Color accent;
   final bool highlight;
   final VoidCallback onTap;
+  final bool isNarrow;
 
   @override
   State<_LaunchCard> createState() => _LaunchCardState();
@@ -824,6 +865,8 @@ class _LaunchCardState extends State<_LaunchCard> {
 
   @override
   Widget build(BuildContext context) {
+    final width = widget.isNarrow ? 300.0 : 230.0;
+    final height = widget.isNarrow ? 90.0 : 260.0;
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       onEnter: (_) => setState(() => _hover = true),
@@ -832,8 +875,8 @@ class _LaunchCardState extends State<_LaunchCard> {
         onTap: widget.onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
-          width: 230,
-          height: 260,
+          width: width,
+          height: height,
           decoration: BoxDecoration(
             color: _hover ? const Color(0xFF22222B) : const Color(0xFF1A1A21),
             borderRadius: BorderRadius.circular(18),
@@ -853,52 +896,121 @@ class _LaunchCardState extends State<_LaunchCard> {
                   ]
                 : null,
           ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                width: 64,
-                height: 64,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: widget.accent.withValues(alpha: 0.12),
-                ),
-                child: Icon(widget.icon, color: widget.accent, size: 30),
-              ),
-              const SizedBox(height: 20),
-              Text(
-                widget.title,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 22,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                widget.subtitle,
-                style: const TextStyle(
-                  color: Color(0xFF8D8D99),
-                  fontSize: 11,
-                ),
-              ),
-              if (widget.highlight) ...[
-                const SizedBox(height: 14),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: widget.accent.withValues(alpha: 0.14),
-                    borderRadius: BorderRadius.circular(8),
+          child: widget.isNarrow
+              ? Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 18),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 46,
+                        height: 46,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: widget.accent.withValues(alpha: 0.12),
+                        ),
+                        child:
+                            Icon(widget.icon, color: widget.accent, size: 24),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Text(
+                                  widget.title,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                if (widget.highlight) ...[
+                                  const SizedBox(width: 8),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color:
+                                          widget.accent.withValues(alpha: 0.14),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Text(
+                                      '上次停留',
+                                      style: TextStyle(
+                                          color: widget.accent, fontSize: 9),
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              widget.subtitle,
+                              style: const TextStyle(
+                                color: Color(0xFF8D8D99),
+                                fontSize: 11,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Icon(
+                        Icons.arrow_forward_ios_rounded,
+                        size: 14,
+                        color: widget.accent.withValues(alpha: 0.6),
+                      ),
+                    ],
                   ),
-                  child: Text(
-                    '上次停留',
-                    style: TextStyle(color: widget.accent, fontSize: 10),
-                  ),
+                )
+              : Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      width: 64,
+                      height: 64,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: widget.accent.withValues(alpha: 0.12),
+                      ),
+                      child: Icon(widget.icon, color: widget.accent, size: 30),
+                    ),
+                    const SizedBox(height: 20),
+                    Text(
+                      widget.title,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 22,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      widget.subtitle,
+                      style: const TextStyle(
+                        color: Color(0xFF8D8D99),
+                        fontSize: 11,
+                      ),
+                    ),
+                    if (widget.highlight) ...[
+                      const SizedBox(height: 14),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: widget.accent.withValues(alpha: 0.14),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          '上次停留',
+                          style: TextStyle(color: widget.accent, fontSize: 10),
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
-              ],
-            ],
-          ),
         ),
       ),
     );
