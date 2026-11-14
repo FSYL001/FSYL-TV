@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/services.dart';
 import 'package:kazumi/services/logging/logger.dart';
+import 'package:kazumi/shell/shell_bridge.dart';
 import 'package:kazumi/utils/device.dart';
 import 'package:window_manager/window_manager.dart';
 
@@ -15,6 +16,7 @@ class DisplayModeService {
   static bool _systemBarsHidden = false;
 
   static Future<void> applyVideoFullscreen(bool fullscreen) {
+    ShellBridge.isFullScreen.value = fullscreen;
     return _pendingFullscreen = _pendingFullscreen.then((_) async {
       if (isDesktop()) {
         await _attempt(() => windowManager.setFullScreen(fullscreen));

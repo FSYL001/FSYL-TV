@@ -19,10 +19,14 @@ class MoviePage extends StatefulWidget {
     super.key,
     required this.sidecar,
     required this.config,
+    this.onScrollDirectionChanged,
+    this.onFullscreenChanged,
   });
 
   final MoonSidecar sidecar;
   final AppConfig config;
+  final ValueChanged<bool>? onScrollDirectionChanged;
+  final ValueChanged<bool>? onFullscreenChanged;
 
   @override
   State<MoviePage> createState() => MoviePageState();
@@ -44,6 +48,7 @@ class MoviePageState extends State<MoviePage> with AutomaticKeepAliveClientMixin
   String _title = '';
   String _currentAndroidUrl = '';
   bool _showConfigDialog = false;
+  int _lastScrollY = 0;
 
   @override
   bool get wantKeepAlive => true;
@@ -318,6 +323,37 @@ class MoviePageState extends State<MoviePage> with AutomaticKeepAliveClientMixin
             onTitleChanged: (controller, title) {
               if (mounted && title != null) setState(() => _title = title);
             },
+            onEnterFullscreen: (controller) {
+              widget.onFullscreenChanged?.call(true);
+            },
+            onExitFullscreen: (controller) {
+              widget.onFullscreenChanged?.call(false);
+            },
+            onScrollChanged: (controller, x, y) {
+              final dy = y - _lastScrollY;
+              if (dy > 12) {
+                // 向下滚动，隐藏顶部切换栏
+                widget.onScrollDirectionChanged?.call(true);
+                _lastScrollY = y;
+              } else if (dy < -12) {
+                // 向上滚动，显示顶部切换栏
+                widget.onScrollDirectionChanged?.call(false);
+                _lastScrollY = y;
+              }
+            },
+            onLoadStop: (controller, url) async {
+              // 注入 no-referrer 标签，解决移动端网页中豆瓣电影海报 403 无法加载问题
+              await controller.evaluateJavascript(source: '''
+(function() {
+  if (!document.querySelector('meta[name="referrer"]')) {
+    var meta = document.createElement('meta');
+    meta.name = "referrer";
+    meta.content = "no-referrer";
+    document.head.appendChild(meta);
+  }
+})();
+''');
+            },
             onLoadError: (controller, url, code, message) {
               if (mounted) setState(() => _lastLoadError = '页面加载失败：$message');
             },
@@ -344,7 +380,7 @@ class MoviePageState extends State<MoviePage> with AutomaticKeepAliveClientMixin
                     Icon(Icons.settings, size: 14, color: Colors.white70),
                     SizedBox(width: 4),
                     Text(
-                      '服务地址',
+                      '服务配置',
                       style: TextStyle(color: Colors.white70, fontSize: 11),
                     ),
                   ],
@@ -357,18 +393,61 @@ class MoviePageState extends State<MoviePage> with AutomaticKeepAliveClientMixin
     );
   }
 
+  Future<void> _selectLocalDeployment() async {
+    // 检查本地 127.0.0.1:3000 是否存活
+    bool isLocalLive = false;
+    try {
+      final client = HttpClient()..connectionTimeout = const Duration(milliseconds: 600);
+      final request = await client.getUrl(Uri.parse('http://127.0.0.1:3000/api/health'));
+      final response = await request.close();
+      if (response.statusCode == 200) {
+        isLocalLive = true;
+      }
+    } catch (_) {
+      isLocalLive = false;
+    }
+
+    final targetUrl = isLocalLive ? 'http://127.0.0.1:3000' : 'https://libretv.vercel.app';
+    await _applyAndSaveUrl(targetUrl);
+  }
+
+  Future<void> _applyAndSaveUrl(String url) async {
+    widget.config.movieUrl = url;
+    await widget.config.saveApp();
+    if (mounted) {
+      setState(() {
+        _currentAndroidUrl = url;
+        _showConfigDialog = false;
+        _lastLoadError = null;
+      });
+    }
+    if (_androidController != null) {
+      await _androidController!.loadUrl(
+        urlRequest: URLRequest(url: WebUri(url)),
+      );
+    }
+  }
+
   Widget _buildServerConfigView() {
     final textController = TextEditingController(text: _currentAndroidUrl);
     return Center(
       child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(vertical: 20),
         child: Container(
-          constraints: const BoxConstraints(maxWidth: 420),
-          margin: const EdgeInsets.all(24),
-          padding: const EdgeInsets.all(24),
+          constraints: const BoxConstraints(maxWidth: 440),
+          margin: const EdgeInsets.symmetric(horizontal: 20),
+          padding: const EdgeInsets.all(22),
           decoration: BoxDecoration(
             color: const Color(0xFF1E1E24),
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(18),
             border: Border.all(color: Colors.white12),
+            boxShadow: const [
+              BoxShadow(
+                color: Colors.black45,
+                blurRadius: 20,
+                offset: Offset(0, 8),
+              ),
+            ],
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -376,38 +455,150 @@ class MoviePageState extends State<MoviePage> with AutomaticKeepAliveClientMixin
             children: [
               Row(
                 children: [
-                  const Icon(Icons.movie_filter, color: Color(0xFF4C9EEB), size: 28),
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF4C9EEB).withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.movie_filter, color: Color(0xFF4C9EEB), size: 24),
+                  ),
                   const SizedBox(width: 12),
-                  const Text(
-                    'MoonTV 影视服务配置',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
+                  const Expanded(
+                    child: Text(
+                      'FSYL TV 影视服务接入',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
-                  const Spacer(),
                   if (_currentAndroidUrl.isNotEmpty)
                     IconButton(
-                      icon: const Icon(Icons.close, color: Colors.white54),
+                      icon: const Icon(Icons.close, color: Colors.white54, size: 20),
                       onPressed: () => setState(() => _showConfigDialog = false),
                     ),
                 ],
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 16),
               const Text(
-                '在移动端上，影视板块采用原生安全容器接入 MoonTV。\n请输入您的 MoonTV 服务端地址（如局域网地址 http://192.168.1.100:3000 或已部署的云端地址）：',
-                style: TextStyle(color: Colors.white70, fontSize: 13, height: 1.5),
+                '请选择影视服务的运行方式：',
+                style: TextStyle(color: Colors.white70, fontSize: 13),
               ),
+              const SizedBox(height: 14),
+
+              // 选项一：本地部署（小白无脑点这个）- 醒目高亮设计
+              Container(
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF2B3A4A), Color(0xFF1E2836)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: const Color(0xFF4C9EEB), width: 1.5),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF4C9EEB).withValues(alpha: 0.2),
+                      blurRadius: 10,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(14),
+                    onTap: _selectLocalDeployment,
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFFFB300),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: const Text(
+                                  '小白无脑点这个',
+                                  style: TextStyle(
+                                    color: Colors.black87,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              const Text(
+                                '推荐模式',
+                                style: TextStyle(color: Color(0xFF4C9EEB), fontSize: 12),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          const Row(
+                            children: [
+                              Icon(Icons.bolt, color: Color(0xFF4C9EEB), size: 24),
+                              SizedBox(width: 8),
+                              Text(
+                                '一键本地运行 / 极速启动',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                          const Text(
+                            '一键即用！自动集成豆瓣海报修复与影视采集源，无需配置任何复杂参数。',
+                            style: TextStyle(color: Colors.white70, fontSize: 12, height: 1.4),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+
               const SizedBox(height: 18),
+              Row(
+                children: [
+                  const Expanded(child: Divider(color: Colors.white12)),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    child: Text(
+                      '或者 (NAS / 专业用户)',
+                      style: TextStyle(color: Colors.white.withValues(alpha: 0.35), fontSize: 11),
+                    ),
+                  ),
+                  const Expanded(child: Divider(color: Colors.white12)),
+                ],
+              ),
+              const SizedBox(height: 14),
+
+              // 选项二：NAS / 专业用户填写在线服务器地址
+              const Text(
+                '在线服务器地址（NAS / 私有云用户）：',
+                style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w500),
+              ),
+              const SizedBox(height: 8),
               TextField(
                 controller: textController,
-                style: const TextStyle(color: Colors.white, fontSize: 14),
+                style: const TextStyle(color: Colors.white, fontSize: 13),
                 decoration: InputDecoration(
-                  hintText: 'http://192.168.1.100:3000',
-                  hintStyle: const TextStyle(color: Colors.white30),
+                  hintText: '如：http://192.168.1.100:3000',
+                  hintStyle: const TextStyle(color: Colors.white30, fontSize: 12),
                   filled: true,
                   fillColor: const Color(0xFF141418),
+                  isDense: true,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
                     borderSide: const BorderSide(color: Colors.white24),
@@ -422,13 +613,29 @@ class MoviePageState extends State<MoviePage> with AutomaticKeepAliveClientMixin
                   ),
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 10),
+              Wrap(
+                spacing: 8,
+                runSpacing: 6,
+                children: [
+                  _PresetChip(
+                    label: '本地 127.0.0.1:3000',
+                    onTap: () => textController.text = 'http://127.0.0.1:3000',
+                  ),
+                  _PresetChip(
+                    label: '局域网 192.168.1.100:3000',
+                    onTap: () => textController.text = 'http://192.168.1.100:3000',
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
               SizedBox(
                 width: double.infinity,
-                child: FilledButton(
-                  style: FilledButton.styleFrom(
-                    backgroundColor: const Color(0xFF4C9EEB),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
+                child: OutlinedButton(
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: Color(0xFF4C9EEB)),
+                    padding: const EdgeInsets.symmetric(vertical: 11),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                   ),
                   onPressed: () async {
                     var input = textController.text.trim();
@@ -436,20 +643,13 @@ class MoviePageState extends State<MoviePage> with AutomaticKeepAliveClientMixin
                       input = 'http://$input';
                     }
                     if (input.isNotEmpty) {
-                      widget.config.movieUrl = input;
-                      await widget.config.saveApp();
-                      setState(() {
-                        _currentAndroidUrl = input;
-                        _showConfigDialog = false;
-                      });
-                      if (_androidController != null) {
-                        await _androidController!.loadUrl(
-                          urlRequest: URLRequest(url: WebUri(input)),
-                        );
-                      }
+                      await _applyAndSaveUrl(input);
                     }
                   },
-                  child: const Text('连接并进入', style: TextStyle(fontSize: 15)),
+                  child: const Text(
+                    '连接自定义地址',
+                    style: TextStyle(color: Color(0xFF4C9EEB), fontSize: 14),
+                  ),
                 ),
               ),
             ],
@@ -626,6 +826,32 @@ class _MovieOverlay extends StatelessWidget {
                 ],
               ],
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PresetChip extends StatelessWidget {
+  const _PresetChip({required this.label, required this.onTap});
+
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: const Color(0xFF2A2A32),
+      borderRadius: BorderRadius.circular(6),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(6),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          child: Text(
+            label,
+            style: const TextStyle(color: Colors.white70, fontSize: 11),
           ),
         ),
       ),

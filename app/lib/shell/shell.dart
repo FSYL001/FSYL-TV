@@ -36,6 +36,7 @@ class _FsylShellState extends State<FsylShell>
   bool _showLaunch = true;
   bool _movieCreated = false;
   bool _isFullScreen = false;
+  bool _titleBarVisible = true;
   bool _exitOverlayVisible = false;
   int _index = 0;
   Timer? _saveTimer;
@@ -52,6 +53,7 @@ class _FsylShellState extends State<FsylShell>
   void initState() {
     super.initState();
     ShellBridge.closeHandler = _handleExitRequest;
+    ShellBridge.isFullScreen.addListener(_onBridgeFullscreenChanged);
     if (isDesktop()) {
       windowManager.addListener(this);
       // Windows 只会在 WM_SIZE 变化时派发 enter-full-screen；窗口已最大化时
@@ -337,11 +339,38 @@ class _FsylShellState extends State<FsylShell>
   }
 
   List<Widget> _buildChildren() {
-    final anime = widget.animeChild ?? const SizedBox.shrink();
+    final anime = NotificationListener<ScrollNotification>(
+      onNotification: (notification) {
+        if (notification is ScrollUpdateNotification) {
+          final dy = notification.scrollDelta ?? 0;
+          if (dy > 8 && _titleBarVisible) {
+            setState(() => _titleBarVisible = false);
+          } else if (dy < -8 && !_titleBarVisible) {
+            setState(() => _titleBarVisible = true);
+          }
+        }
+        return false;
+      },
+      child: widget.animeChild ?? const SizedBox.shrink(),
+    );
     if (_movieCreated) {
       return [
         anime,
-        MoviePage(key: _movieKey, sidecar: _sidecar, config: _config),
+        MoviePage(
+          key: _movieKey,
+          sidecar: _sidecar,
+          config: _config,
+          onScrollDirectionChanged: (show) {
+            if (mounted && _titleBarVisible != show) {
+              setState(() => _titleBarVisible = show);
+            }
+          },
+          onFullscreenChanged: (fullscreen) {
+            if (mounted && _isFullScreen != fullscreen) {
+              setState(() => _isFullScreen = fullscreen);
+            }
+          },
+        ),
       ];
     }
     return [anime, const SizedBox.shrink()];
@@ -355,6 +384,11 @@ class _FsylShellState extends State<FsylShell>
         child: Center(child: CircularProgressIndicator()),
       );
     }
+
+    final isLandscape =
+        MediaQuery.of(context).orientation == Orientation.landscape;
+    final inFullscreen = _isFullScreen || (!isDesktop() && isLandscape);
+    final showTitleBar = _entered && !inFullscreen && _titleBarVisible;
 
     final topInset = isDesktop() ? 0.0 : MediaQuery.of(context).padding.top;
     final effectiveTitleHeight = _titleBarHeight + topInset;
@@ -381,10 +415,12 @@ class _FsylShellState extends State<FsylShell>
           children: [
             Positioned.fill(
               child: _entered
-                  ? Padding(
+                  ? AnimatedPadding(
                       padding: EdgeInsets.only(
-                        top: _isFullScreen ? 0 : effectiveTitleHeight,
+                        top: showTitleBar ? effectiveTitleHeight : 0,
                       ),
+                      duration: const Duration(milliseconds: 220),
+                      curve: Curves.easeInOutCubic,
                       child: FadeTransition(
                         opacity: Tween<double>(begin: 0.72, end: 1).animate(
                           CurvedAnimation(
@@ -400,12 +436,15 @@ class _FsylShellState extends State<FsylShell>
                     )
                   : const SizedBox.shrink(),
             ),
-            if (_entered && !_isFullScreen)
-              Positioned(
-                left: 0,
-                right: 0,
-                top: 0,
-                height: effectiveTitleHeight,
+            Positioned(
+              left: 0,
+              right: 0,
+              top: 0,
+              height: effectiveTitleHeight,
+              child: AnimatedSlide(
+                offset: showTitleBar ? Offset.zero : const Offset(0, -1),
+                duration: const Duration(milliseconds: 220),
+                curve: Curves.easeInOutCubic,
                 child: _TitleBar(
                   activeIndex: _index,
                   onSwitch: _switchTo,
@@ -419,6 +458,7 @@ class _FsylShellState extends State<FsylShell>
                   onClose: () => _handleExitRequest(),
                 ),
               ),
+            ),
             if (_showLaunch)
               Positioned.fill(
                 child: IgnorePointer(
@@ -458,8 +498,16 @@ class _FsylShellState extends State<FsylShell>
     );
   }
 
+  void _onBridgeFullscreenChanged() {
+    final fs = ShellBridge.isFullScreen.value;
+    if (mounted && fs != _isFullScreen) {
+      setState(() => _isFullScreen = fs);
+    }
+  }
+
   @override
   void dispose() {
+    ShellBridge.isFullScreen.removeListener(_onBridgeFullscreenChanged);
     _saveTimer?.cancel();
     _launchFadeTimer?.cancel();
     _fullscreenPoll?.cancel();
