@@ -211,7 +211,7 @@ class _CompactSpaceLayout extends StatelessWidget {
             _entry(
                 '存储管理', Icons.cleaning_services_rounded, MyDestination.storage),
             _entry(
-                '关于 Kazumi', Icons.info_outline_rounded, MyDestination.about),
+                '关于 FSYL TV', Icons.info_outline_rounded, MyDestination.about),
           ],
         ),
       ],

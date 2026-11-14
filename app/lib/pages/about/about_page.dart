@@ -71,16 +71,16 @@ class AboutPage extends StatelessWidget {
                   ],
                 ),
                 ContentSection.group(
-                  title: 'Kazumi 上游链接',
+                  title: '上游链接与致谢',
                   children: const [
                     AboutLinkTile(
                       icon: Icons.language_rounded,
-                      title: 'Kazumi 项目主页',
+                      title: '上游 Kazumi 项目主页',
                       url: 'https://github.com/Predidit/Kazumi',
                     ),
                     AboutLinkTile(
                       icon: Icons.bug_report_rounded,
-                      title: 'Kazumi 问题反馈',
+                      title: '上游 Kazumi 问题反馈',
                       url: 'https://github.com/Predidit/Kazumi/issues',
                     ),
                     AboutLinkTile.route(
