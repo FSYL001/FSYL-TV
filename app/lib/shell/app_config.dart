@@ -12,6 +12,7 @@ class AppConfig {
     this.height = 860,
     this.maximized = false,
     this.lastModule = 'anime',
+    this.movieUrl = '',
   });
 
   double x;
@@ -20,6 +21,7 @@ class AppConfig {
   double height;
   bool maximized;
   String lastModule;
+  String movieUrl;
 
   static Future<AppConfig> load() async {
     final config = AppConfig();
@@ -49,6 +51,7 @@ class AppConfig {
     try {
       final map = jsonDecode(await file.readAsString()) as Map<String, dynamic>;
       lastModule = map['lastModule'] as String? ?? lastModule;
+      movieUrl = map['movieUrl'] as String? ?? movieUrl;
     } catch (_) {
       // 忽略损坏配置。
     }
@@ -66,7 +69,11 @@ class AppConfig {
   }
 
   Future<void> saveApp() async {
-    final map = {'lastModule': lastModule, 'schemaVersion': 1};
+    final map = {
+      'lastModule': lastModule,
+      'movieUrl': movieUrl,
+      'schemaVersion': 1,
+    };
     await _writeAtomic(AppPaths.instance.appConfigFile, map);
   }
 

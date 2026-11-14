@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 
 /// 全应用唯一的路径入口（SPEC §2）。
 ///
@@ -74,9 +75,12 @@ class AppPaths {
       nodeExe = p.join(appDir, 'moon', 'node.exe');
     }
 
-    // 数据根：环境变量 > 开发数据目录 > %LOCALAPPDATA%
+    // 数据根：移动端使用沙箱支持目录，桌面端按契约使用 %LOCALAPPDATA%
     if (envData != null && envData.isNotEmpty) {
       dataRoot = p.normalize(p.absolute(envData));
+    } else if (Platform.isAndroid || Platform.isIOS) {
+      final supportDir = await getApplicationSupportDirectory();
+      dataRoot = p.join(supportDir.path, 'FSYLTV', 'data');
     } else if (repo != null && _looksLikeDevBuild(exeDir)) {
       dataRoot = p.join(repo.path, 'build', 'dev-data');
     } else {

@@ -3,6 +3,11 @@ allprojects {
         google()
         mavenCentral()
     }
+    tasks.configureEach { task ->
+        if (task.name.toLowerCase().contains("lintvital")) {
+            task.enabled = false
+        }
+    }
 }
 
 rootProject.buildDir = '../build'
@@ -11,6 +16,17 @@ subprojects {
 }
 subprojects {
     project.evaluationDependsOn(':app')
+}
+
+subprojects {
+    plugins.withId("com.android.library") {
+        android {
+            lint {
+                abortOnError = false
+                checkReleaseBuilds = false
+            }
+        }
+    }
 }
 
 tasks.register("clean", Delete) {

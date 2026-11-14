@@ -33,6 +33,10 @@ class MoonSidecar extends ChangeNotifier {
   bool get isReady => status == MoonStatus.ready && _port != null;
 
   Future<void> start() async {
+    if (!Platform.isWindows && !Platform.isLinux && !Platform.isMacOS) {
+      _setStatus(MoonStatus.stopped);
+      return;
+    }
     if (_starting || status == MoonStatus.starting || isReady) return;
     _starting = true;
     _stopping = false;

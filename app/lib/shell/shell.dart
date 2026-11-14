@@ -10,6 +10,7 @@ import 'package:kazumi/shell/exit_flow.dart';
 import 'package:kazumi/shell/moon_sidecar.dart';
 import 'package:kazumi/shell/movie_page.dart';
 import 'package:kazumi/shell/shell_bridge.dart';
+import 'package:kazumi/utils/device.dart';
 import 'package:window_manager/window_manager.dart';
 
 const double _titleBarHeight = 40;
@@ -51,17 +52,19 @@ class _FsylShellState extends State<FsylShell>
   void initState() {
     super.initState();
     ShellBridge.closeHandler = _handleExitRequest;
-    windowManager.addListener(this);
-    // Windows 只会在 WM_SIZE 变化时派发 enter-full-screen；窗口已最大化时
-    // setFullScreen(true) 可能不产生该事件，轮询原生状态兜底。
-    _fullscreenPoll = Timer.periodic(const Duration(milliseconds: 500), (_) async {
-      try {
-        final fullscreen = await windowManager.isFullScreen();
-        if (mounted && fullscreen != _isFullScreen) {
-          setState(() => _isFullScreen = fullscreen);
-        }
-      } catch (_) {}
-    });
+    if (isDesktop()) {
+      windowManager.addListener(this);
+      // Windows 只会在 WM_SIZE 变化时派发 enter-full-screen；窗口已最大化时
+      // setFullScreen(true) 可能不产生该事件，轮询原生状态兜底。
+      _fullscreenPoll = Timer.periodic(const Duration(milliseconds: 500), (_) async {
+        try {
+          final fullscreen = await windowManager.isFullScreen();
+          if (mounted && fullscreen != _isFullScreen) {
+            setState(() => _isFullScreen = fullscreen);
+          }
+        } catch (_) {}
+      });
+    }
     _loadConfig();
   }
 
@@ -300,6 +303,7 @@ class _FsylShellState extends State<FsylShell>
   }
 
   Future<void> _toggleMaximize() async {
+    if (!isDesktop()) return;
     if (await windowManager.isMaximized()) {
       await windowManager.unmaximize();
     } else {
@@ -314,7 +318,7 @@ class _FsylShellState extends State<FsylShell>
   void onWindowMove() => _captureBounds();
 
   Future<void> _captureBounds() async {
-    if (!_configLoaded) return;
+    if (!isDesktop() || !_configLoaded) return;
     try {
       final maximized = await windowManager.isMaximized();
       if (maximized) {
@@ -352,6 +356,9 @@ class _FsylShellState extends State<FsylShell>
       );
     }
 
+    final topInset = isDesktop() ? 0.0 : MediaQuery.of(context).padding.top;
+    final effectiveTitleHeight = _titleBarHeight + topInset;
+
     return Scaffold(
       backgroundColor: const Color(0xFF101014),
       body: Stack(
@@ -360,7 +367,7 @@ class _FsylShellState extends State<FsylShell>
             child: _entered
                 ? Padding(
                     padding: EdgeInsets.only(
-                      top: _isFullScreen ? 0 : _titleBarHeight,
+                      top: _isFullScreen ? 0 : effectiveTitleHeight,
                     ),
                     child: FadeTransition(
                       opacity: Tween<double>(begin: 0.72, end: 1).animate(
@@ -382,12 +389,16 @@ class _FsylShellState extends State<FsylShell>
               left: 0,
               right: 0,
               top: 0,
-              height: _titleBarHeight,
+              height: effectiveTitleHeight,
               child: _TitleBar(
                 activeIndex: _index,
                 onSwitch: _switchTo,
-                onMinimizeToTray: () => windowManager.hide(),
-                onMinimize: () => windowManager.minimize(),
+                onMinimizeToTray: () {
+                  if (isDesktop()) windowManager.hide();
+                },
+                onMinimize: () {
+                  if (isDesktop()) windowManager.minimize();
+                },
                 onMaximize: _toggleMaximize,
                 onClose: () => _handleExitRequest(),
               ),
@@ -437,7 +448,9 @@ class _FsylShellState extends State<FsylShell>
     _fullscreenPoll?.cancel();
     _switchFade.dispose();
     ShellBridge.closeHandler = null;
-    windowManager.removeListener(this);
+    if (isDesktop()) {
+      windowManager.removeListener(this);
+    }
     unawaited(_sidecar.stop());
     _sidecar.dispose();
     super.dispose();
@@ -463,83 +476,87 @@ class _TitleBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final desktop = isDesktop();
     return Material(
       color: const Color(0xFF17171C),
-      child: SizedBox(
-        height: _titleBarHeight,
-        child: Stack(
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onPanStart: (_) => windowManager.startDragging(),
-                    onDoubleTap: onMaximize,
-                    child: Container(
-                      height: _titleBarHeight,
-                      padding: const EdgeInsets.only(left: 12),
-                      alignment: Alignment.centerLeft,
-                      child: const Row(
-                        children: [
-                          _BrandMark(size: 16),
-                          SizedBox(width: 8),
-                          Text(
-                            'FSYL TV',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 0.6,
+      child: SafeArea(
+        bottom: false,
+        child: SizedBox(
+          height: _titleBarHeight,
+          child: Stack(
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onPanStart: desktop ? (_) => windowManager.startDragging() : null,
+                      onDoubleTap: desktop ? onMaximize : null,
+                      child: Container(
+                        height: _titleBarHeight,
+                        padding: const EdgeInsets.only(left: 12),
+                        alignment: Alignment.centerLeft,
+                        child: const Row(
+                          children: [
+                            _BrandMark(size: 16),
+                            SizedBox(width: 8),
+                            Text(
+                              'FSYL TV',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 0.6,
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   ),
-                ),
-                Expanded(
-                  child: GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onPanStart: (_) => windowManager.startDragging(),
-                    onDoubleTap: onMaximize,
-                    child: Container(height: _titleBarHeight),
+                  if (desktop) ...[
+                    Expanded(
+                      child: GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onPanStart: (_) => windowManager.startDragging(),
+                        onDoubleTap: onMaximize,
+                        child: Container(height: _titleBarHeight),
+                      ),
+                    ),
+                    _WindowButton(
+                      icon: Icons.vertical_align_bottom,
+                      tooltip: '隐藏到托盘',
+                      onTap: onMinimizeToTray,
+                    ),
+                    _WindowButton(
+                      icon: Icons.remove,
+                      tooltip: '最小化',
+                      onTap: onMinimize,
+                    ),
+                    _WindowButton(
+                      icon: Icons.crop_square,
+                      tooltip: '最大化/还原',
+                      onTap: onMaximize,
+                    ),
+                    _WindowButton(
+                      icon: Icons.close,
+                      tooltip: '关闭',
+                      onTap: onClose,
+                      isClose: true,
+                    ),
+                  ],
+                ],
+              ),
+              Positioned.fill(
+                child: Center(
+                  child: _CapsuleSwitcher(
+                    activeIndex: activeIndex,
+                    onSwitch: onSwitch,
                   ),
                 ),
-                _WindowButton(
-                  icon: Icons.vertical_align_bottom,
-                  tooltip: '隐藏到托盘',
-                  onTap: onMinimizeToTray,
-                ),
-                _WindowButton(
-                  icon: Icons.remove,
-                  tooltip: '最小化',
-                  onTap: onMinimize,
-                ),
-                _WindowButton(
-                  icon: Icons.crop_square,
-                  tooltip: '最大化/还原',
-                  onTap: onMaximize,
-                ),
-                _WindowButton(
-                  icon: Icons.close,
-                  tooltip: '关闭',
-                  onTap: onClose,
-                  isClose: true,
-                ),
-              ],
-            ),
-            // Keep the module switcher centered at any window width; it must
-            // not drift when content/app bar widths change.
-            Positioned.fill(
-              child: Center(
-                child: _CapsuleSwitcher(
-                  activeIndex: activeIndex,
-                  onSwitch: onSwitch,
-                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

@@ -1,4 +1,5 @@
 import 'dart:ffi';
+import 'dart:io';
 
 import 'package:ffi/ffi.dart';
 import 'package:win32/win32.dart';
@@ -53,6 +54,7 @@ class JobObject {
 
   /// Assign [pid] to the kill-on-close job. Safe to call repeatedly.
   bool assign(int pid) {
+    if (!Platform.isWindows) return false;
     if (_failed) return false;
     try {
       _job ??= _createJob();

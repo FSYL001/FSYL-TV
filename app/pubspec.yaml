@@ -103,6 +103,7 @@ dependencies:
       ref: cd75bcfe94ba45ebb6f6b940c68e072d079aee14
       path: ./media_kit_video
   macos_secure_bookmarks: ^0.2.1
+  flutter_native_splash: ^2.4.3
 
 dev_dependencies:
   path_provider_platform_interface: ^2.1.2
@@ -115,7 +116,6 @@ dev_dependencies:
   mobx_codegen: ^2.7.5
   hive_ce_generator: ^1.10.0
   flutter_launcher_icons: ^0.14.3
-  flutter_native_splash: ^2.4.3
   msix: ^3.16.12
 
 flutter_launcher_icons:
