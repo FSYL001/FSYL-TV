@@ -262,13 +262,18 @@ class LocalMoonServer {
         final body = await utf8.decodeStream(resp);
         final data = jsonDecode(body) as Map<String, dynamic>;
         final subjects = data['subjects'] as List<dynamic>?;
-        if (subjects != null) {
+        if (subjects != null && subjects.isNotEmpty) {
           items = subjects.map((s) {
+            final rawId = s['id']?.toString() ?? '';
+            final id = rawId.isNotEmpty
+                ? rawId
+                : RegExp(r'subject/(\d+)').firstMatch(s['url']?.toString() ?? '')?.group(1) ?? '';
             return {
-              'id': s['id']?.toString() ?? '',
+              'id': id,
               'title': s['title']?.toString() ?? '',
-              'poster': _wrapPosterUrl(s['cover']?.toString()),
+              'poster': s['cover']?.toString() ?? '',
               'rate': s['rate']?.toString() ?? '',
+              'year': '',
             };
           }).toList();
         }
@@ -291,15 +296,18 @@ class LocalMoonServer {
           final body = await utf8.decodeStream(resp);
           final data = jsonDecode(body) as Map<String, dynamic>;
           final rawItems = data['items'] as List<dynamic>?;
-          if (rawItems != null) {
+          if (rawItems != null && rawItems.isNotEmpty) {
             items = rawItems.map((s) {
               final pic = s['pic'] as Map<String, dynamic>?;
-              final rawCover = pic?['normal']?.toString() ?? pic?['large']?.toString();
+              final rawCover = pic?['normal']?.toString() ?? pic?['large']?.toString() ?? '';
+              final subtitle = s['card_subtitle']?.toString() ?? '';
+              final yearMatch = RegExp(r'(\d{4})').firstMatch(subtitle);
               return {
                 'id': s['id']?.toString() ?? '',
                 'title': s['title']?.toString() ?? '',
-                'poster': _wrapPosterUrl(rawCover),
+                'poster': rawCover,
                 'rate': s['rating']?['value']?.toString() ?? '',
+                'year': yearMatch?.group(1) ?? '',
               };
             }).toList();
           }
@@ -308,10 +316,16 @@ class LocalMoonServer {
     }
 
     client.close();
+
+    // 按照 MoonTV 规范，返回必须包含 code: 200 与 list
     final res = request.response;
     res.statusCode = HttpStatus.ok;
     res.headers.contentType = ContentType.json;
-    res.write(jsonEncode(items));
+    res.write(jsonEncode({
+      'code': 200,
+      'message': '获取成功',
+      'list': items,
+    }));
     await res.close();
   }
 
@@ -319,19 +333,25 @@ class LocalMoonServer {
     HttpRequest request,
     Map<String, String> params,
   ) async {
-    final target = params['url'];
+    String target = params['url']?.trim() ?? '';
     final res = request.response;
-    if (target == null || target.isEmpty) {
+    if (target.isEmpty) {
       res.statusCode = HttpStatus.badRequest;
       res.write('missing url');
       await res.close();
       return;
     }
 
+    // 解除可能被前端重复编码或多重包装的代理前缀
+    while (target.contains('url=')) {
+      final idx = target.indexOf('url=');
+      target = Uri.decodeComponent(target.substring(idx + 4));
+    }
+
     final uri = Uri.tryParse(target);
     if (uri == null || (!uri.isScheme('http') && !uri.isScheme('https'))) {
       res.statusCode = HttpStatus.badRequest;
-      res.write('invalid url');
+      res.write('invalid url: $target');
       await res.close();
       return;
     }
@@ -349,6 +369,8 @@ class LocalMoonServer {
       }
       final upstream = await req.close();
       res.statusCode = upstream.statusCode;
+      res.headers.set('Access-Control-Allow-Origin', '*');
+      res.headers.set('Cache-Control', 'public, max-age=86400');
       if (upstream.headers.contentType != null) {
         res.headers.contentType = upstream.headers.contentType;
       } else {
