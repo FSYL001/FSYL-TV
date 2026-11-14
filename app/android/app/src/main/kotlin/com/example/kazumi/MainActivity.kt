@@ -52,9 +52,9 @@ class MainActivity: AudioServiceActivity() {
     private var originalWindowBackground: Drawable? = null
     private var windowBackgroundOverridden = false
 
-    private val actionPipPlayPause = "com.predidit.kazumi.pip.PLAY_PAUSE"
-    private val actionPipForward = "com.predidit.kazumi.pip.FORWARD"
-    private val actionPipToggleDanmaku = "com.predidit.kazumi.pip.TOGGLE_DANMAKU"
+    private val actionPipPlayPause = "com.fsyl.tv.pip.PLAY_PAUSE"
+    private val actionPipForward = "com.fsyl.tv.pip.FORWARD"
+    private val actionPipToggleDanmaku = "com.fsyl.tv.pip.TOGGLE_DANMAKU"
 
     // Ratios outside [1:2.39, 2.39:1] make enterPictureInPictureMode throw.
     private val maxPipAspectRatio = 2.39f

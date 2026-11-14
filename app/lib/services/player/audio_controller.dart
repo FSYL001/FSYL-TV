@@ -52,8 +52,8 @@ class AudioController {
         return rawHandler;
       },
       config: const AudioServiceConfig(
-        androidNotificationChannelId: 'io.github.Predidit.Kazumi.channel.audio',
-        androidNotificationChannelName: 'Kazumi Playback',
+        androidNotificationChannelId: 'com.fsyl.tv.channel.audio',
+        androidNotificationChannelName: 'FSYL TV Playback',
         androidNotificationOngoing: true,
       ),
     );

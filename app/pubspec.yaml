@@ -1,7 +1,7 @@
 name: kazumi
-description: "A new Flutter project."
+description: "FSYL TV"
 publish_to: "none"
-version: 2.4.4+20404
+version: 1.0.5+10005
 
 environment:
   sdk: ">=3.10.0 <4.0.0"
