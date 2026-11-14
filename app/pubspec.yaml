@@ -30,6 +30,7 @@ dependencies:
   ech_http: ^0.2.4
   http: ^1.6.0
   image: ^4.8.0
+  archive: 3.6.1
   file_picker: ^10.3.7
 
   flutter_volume_controller: ^2.0.2
@@ -162,6 +163,7 @@ flutter:
     - assets/images/logo/
     - assets/statements/
     - assets/rules/
+    - assets/moon/bundle.zip
     - licenses/ech_http/
   fonts:
     - family: MI_Sans_Regular

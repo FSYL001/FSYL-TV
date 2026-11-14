@@ -5,6 +5,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:kazumi/shell/app_paths.dart';
 import 'package:kazumi/shell/app_config.dart';
+import 'package:kazumi/shell/local_moon_server.dart';
 import 'package:kazumi/shell/moon_sidecar.dart';
 import 'package:webview_windows/webview_windows.dart';
 import 'package:flutter_inappwebview_platform_interface/flutter_inappwebview_platform_interface.dart';
@@ -66,19 +67,34 @@ class MoviePageState extends State<MoviePage> with AutomaticKeepAliveClientMixin
   }
 
   void _initAndroidWebview() {
+    _startAndroidServerAndLoad();
+  }
+
+  Future<void> _startAndroidServerAndLoad() async {
+    int port = 3000;
+    try {
+      port = await LocalMoonServer.instance.start();
+    } catch (e) {
+      debugPrint('LocalMoonServer start error: $e');
+    }
+
     final override = Platform.environment['FSYLTV_MOVIE_URL'];
     final configured = widget.config.movieUrl;
     if (override != null && override.isNotEmpty) {
       _currentAndroidUrl = override;
-    } else if (configured.isNotEmpty) {
+    } else if (configured.isNotEmpty && !configured.contains('libretv')) {
       _currentAndroidUrl = configured;
     } else {
-      _currentAndroidUrl = '';
+      _currentAndroidUrl = 'http://127.0.0.1:$port';
+      widget.config.movieUrl = _currentAndroidUrl;
+      await widget.config.saveApp();
     }
-    setState(() {
-      _initializing = false;
-      _webviewError = null;
-    });
+    if (mounted) {
+      setState(() {
+        _initializing = false;
+        _webviewError = null;
+      });
+    }
   }
 
   void _startS1StatsIfNeeded() {
@@ -394,20 +410,11 @@ class MoviePageState extends State<MoviePage> with AutomaticKeepAliveClientMixin
   }
 
   Future<void> _selectLocalDeployment() async {
-    // 检查本地 127.0.0.1:3000 是否存活
-    bool isLocalLive = false;
+    int port = 3000;
     try {
-      final client = HttpClient()..connectionTimeout = const Duration(milliseconds: 600);
-      final request = await client.getUrl(Uri.parse('http://127.0.0.1:3000/api/health'));
-      final response = await request.close();
-      if (response.statusCode == 200) {
-        isLocalLive = true;
-      }
-    } catch (_) {
-      isLocalLive = false;
-    }
-
-    final targetUrl = isLocalLive ? 'http://127.0.0.1:3000' : 'https://libretv.vercel.app';
+      port = await LocalMoonServer.instance.start();
+    } catch (_) {}
+    final targetUrl = 'http://127.0.0.1:$port';
     await _applyAndSaveUrl(targetUrl);
   }
 
@@ -546,7 +553,7 @@ class MoviePageState extends State<MoviePage> with AutomaticKeepAliveClientMixin
                               Icon(Icons.bolt, color: Color(0xFF4C9EEB), size: 24),
                               SizedBox(width: 8),
                               Text(
-                                '一键本地运行 / 极速启动',
+                                '运行内置 FSYL TV 影视服务（本地移植）',
                                 style: TextStyle(
                                   color: Colors.white,
                                   fontSize: 16,
@@ -557,7 +564,7 @@ class MoviePageState extends State<MoviePage> with AutomaticKeepAliveClientMixin
                           ),
                           const SizedBox(height: 6),
                           const Text(
-                            '一键即用！自动集成豆瓣海报修复与影视采集源，无需配置任何复杂参数。',
+                            '一键即用！手机本地运行项目自带的影视核心，已移植 PC 端全部修复与 20 个影视采集源，无需任何外部服务器。',
                             style: TextStyle(color: Colors.white70, fontSize: 12, height: 1.4),
                           ),
                         ],
