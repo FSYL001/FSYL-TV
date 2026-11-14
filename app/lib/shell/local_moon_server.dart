@@ -222,6 +222,12 @@ class LocalMoonServer {
     }
   }
 
+  String _wrapPosterUrl(String? raw) {
+    if (raw == null || raw.isEmpty) return '';
+    if (raw.startsWith('/api/image-proxy')) return raw;
+    return '/api/image-proxy?url=${Uri.encodeComponent(raw)}';
+  }
+
   Future<void> _handleDoubanCategories(
     HttpRequest request,
     Map<String, String> params,
@@ -240,7 +246,9 @@ class LocalMoonServer {
         '?type=$legacyType&tag=${Uri.encodeComponent(legacyTag)}'
         '&sort=recommend&page_limit=$limit&page_start=$start';
 
-    final client = HttpClient()..connectionTimeout = const Duration(seconds: 8);
+    final client = HttpClient()
+      ..connectionTimeout = const Duration(seconds: 8)
+      ..badCertificateCallback = ((X509Certificate cert, String host, int port) => true);
     List<Map<String, dynamic>> items = [];
 
     // 1. 优先尝试 legacy 接口
@@ -259,7 +267,7 @@ class LocalMoonServer {
             return {
               'id': s['id']?.toString() ?? '',
               'title': s['title']?.toString() ?? '',
-              'poster': s['cover']?.toString() ?? '',
+              'poster': _wrapPosterUrl(s['cover']?.toString()),
               'rate': s['rate']?.toString() ?? '',
             };
           }).toList();
@@ -286,10 +294,11 @@ class LocalMoonServer {
           if (rawItems != null) {
             items = rawItems.map((s) {
               final pic = s['pic'] as Map<String, dynamic>?;
+              final rawCover = pic?['normal']?.toString() ?? pic?['large']?.toString();
               return {
                 'id': s['id']?.toString() ?? '',
                 'title': s['title']?.toString() ?? '',
-                'poster': pic?['normal']?.toString() ?? pic?['large']?.toString() ?? '',
+                'poster': _wrapPosterUrl(rawCover),
                 'rate': s['rating']?['value']?.toString() ?? '',
               };
             }).toList();
@@ -327,10 +336,14 @@ class LocalMoonServer {
       return;
     }
 
-    final client = HttpClient()..connectionTimeout = const Duration(seconds: 12);
+    final client = HttpClient()
+      ..connectionTimeout = const Duration(seconds: 15)
+      ..badCertificateCallback = ((X509Certificate cert, String host, int port) => true);
     try {
       final req = await client.getUrl(uri);
+      req.followRedirects = true;
       req.headers.set('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/131.0.0.0 Safari/537.36');
+      req.headers.set('Accept', 'image/avif,image/webp,image/apng,image/*,*/*;q=0.8');
       if (uri.host.contains('doubanio.com') || uri.host.contains('douban.com')) {
         req.headers.set('Referer', 'https://movie.douban.com/');
       }
@@ -409,10 +422,14 @@ class LocalMoonServer {
       return list.map((item) {
         final playUrl = item['vod_play_url']?.toString() ?? '';
         final episodes = _extractM3u8(playUrl);
+        final rawPic = item['vod_pic']?.toString() ?? '';
+        final poster = (rawPic.contains('doubanio.com') || rawPic.contains('douban.com'))
+            ? _wrapPosterUrl(rawPic)
+            : rawPic;
         return {
           'id': item['vod_id']?.toString() ?? '',
           'title': (item['vod_name']?.toString() ?? '').replaceAll(RegExp(r'\s+'), ' ').trim(),
-          'poster': item['vod_pic']?.toString() ?? '',
+          'poster': poster,
           'episodes': episodes,
           'source': source.key,
           'source_name': source.name,
@@ -505,10 +522,14 @@ class LocalMoonServer {
         final item = list[0] as Map<String, dynamic>;
         final playUrl = item['vod_play_url']?.toString() ?? '';
         final episodes = _extractM3u8(playUrl);
+        final rawPic = item['vod_pic']?.toString() ?? '';
+        final poster = (rawPic.contains('doubanio.com') || rawPic.contains('douban.com'))
+            ? _wrapPosterUrl(rawPic)
+            : rawPic;
         final result = {
           'id': item['vod_id']?.toString() ?? id,
           'title': item['vod_name']?.toString() ?? '',
-          'poster': item['vod_pic']?.toString() ?? '',
+          'poster': poster,
           'episodes': episodes,
           'source': target.key,
           'source_name': target.name,

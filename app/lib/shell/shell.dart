@@ -448,6 +448,7 @@ class _FsylShellState extends State<FsylShell>
                 child: _TitleBar(
                   activeIndex: _index,
                   onSwitch: _switchTo,
+                  onMovieConfigTap: () => _movieKey.currentState?.openConfigDialog(),
                   onMinimizeToTray: () {
                     if (isDesktop()) windowManager.hide();
                   },
@@ -526,6 +527,7 @@ class _TitleBar extends StatelessWidget {
   const _TitleBar({
     required this.activeIndex,
     required this.onSwitch,
+    this.onMovieConfigTap,
     required this.onMinimizeToTray,
     required this.onMinimize,
     required this.onMaximize,
@@ -534,6 +536,7 @@ class _TitleBar extends StatelessWidget {
 
   final int activeIndex;
   final ValueChanged<int> onSwitch;
+  final VoidCallback? onMovieConfigTap;
   final VoidCallback onMinimizeToTray;
   final VoidCallback onMinimize;
   final VoidCallback onMaximize;
@@ -609,6 +612,41 @@ class _TitleBar extends StatelessWidget {
                       onTap: onClose,
                       isClose: true,
                     ),
+                  ] else ...[
+                    if (activeIndex == 1 && onMovieConfigTap != null)
+                      Padding(
+                        padding: const EdgeInsets.only(right: 12),
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(14),
+                            onTap: onMovieConfigTap,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF26262E),
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(color: const Color(0xFF35353F)),
+                              ),
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.tune_rounded, size: 12, color: Color(0xFF4C9EEB)),
+                                  SizedBox(width: 4),
+                                  Text(
+                                    '服务配置',
+                                    style: TextStyle(
+                                      color: Colors.white70,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
                   ],
                 ],
               ),

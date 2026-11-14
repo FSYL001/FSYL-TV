@@ -347,13 +347,13 @@ class MoviePageState extends State<MoviePage> with AutomaticKeepAliveClientMixin
             },
             onScrollChanged: (controller, x, y) {
               final dy = y - _lastScrollY;
-              if (dy > 12) {
-                // 向下滚动，隐藏顶部切换栏
-                widget.onScrollDirectionChanged?.call(true);
-                _lastScrollY = y;
-              } else if (dy < -12) {
-                // 向上滚动，显示顶部切换栏
+              if (dy > 8) {
+                // 往下翻页 / 向下滚动：隐藏顶部切换栏
                 widget.onScrollDirectionChanged?.call(false);
+                _lastScrollY = y;
+              } else if (dy < -8) {
+                // 往上翻页 / 向上滚动：显示顶部切换栏
+                widget.onScrollDirectionChanged?.call(true);
                 _lastScrollY = y;
               }
             },
@@ -375,38 +375,14 @@ class MoviePageState extends State<MoviePage> with AutomaticKeepAliveClientMixin
             },
           ),
         ).build(context),
-        Positioned(
-          top: 10,
-          right: 12,
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              borderRadius: BorderRadius.circular(20),
-              onTap: () => setState(() => _showConfigDialog = true),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.6),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Colors.white24),
-                ),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.settings, size: 14, color: Colors.white70),
-                    SizedBox(width: 4),
-                    Text(
-                      '服务配置',
-                      style: TextStyle(color: Colors.white70, fontSize: 11),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
       ],
     );
+  }
+
+  void openConfigDialog() {
+    if (mounted) {
+      setState(() => _showConfigDialog = true);
+    }
   }
 
   Future<void> _selectLocalDeployment() async {
@@ -441,9 +417,9 @@ class MoviePageState extends State<MoviePage> with AutomaticKeepAliveClientMixin
       child: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(vertical: 20),
         child: Container(
-          constraints: const BoxConstraints(maxWidth: 440),
-          margin: const EdgeInsets.symmetric(horizontal: 20),
-          padding: const EdgeInsets.all(22),
+          constraints: const BoxConstraints(maxWidth: 420),
+          margin: const EdgeInsets.symmetric(horizontal: 16),
+          padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
             color: const Color(0xFF1E1E24),
             borderRadius: BorderRadius.circular(18),
@@ -463,37 +439,40 @@ class MoviePageState extends State<MoviePage> with AutomaticKeepAliveClientMixin
               Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(8),
+                    padding: const EdgeInsets.all(7),
                     decoration: BoxDecoration(
                       color: const Color(0xFF4C9EEB).withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(8),
                     ),
-                    child: const Icon(Icons.movie_filter, color: Color(0xFF4C9EEB), size: 24),
+                    child: const Icon(Icons.movie_filter, color: Color(0xFF4C9EEB), size: 22),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 10),
                   const Expanded(
                     child: Text(
                       'FSYL TV 影视服务接入',
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: 18,
+                        fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                   if (_currentAndroidUrl.isNotEmpty)
                     IconButton(
                       icon: const Icon(Icons.close, color: Colors.white54, size: 20),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
                       onPressed: () => setState(() => _showConfigDialog = false),
                     ),
                 ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 14),
               const Text(
                 '请选择影视服务的运行方式：',
                 style: TextStyle(color: Colors.white70, fontSize: 13),
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 12),
 
               // 选项一：本地部署（小白无脑点这个）- 醒目高亮设计
               Container(
@@ -519,7 +498,7 @@ class MoviePageState extends State<MoviePage> with AutomaticKeepAliveClientMixin
                     borderRadius: BorderRadius.circular(14),
                     onTap: _selectLocalDeployment,
                     child: Padding(
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(14),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -541,30 +520,36 @@ class MoviePageState extends State<MoviePage> with AutomaticKeepAliveClientMixin
                                 ),
                               ),
                               const SizedBox(width: 8),
-                              const Text(
-                                '推荐模式',
-                                style: TextStyle(color: Color(0xFF4C9EEB), fontSize: 12),
+                              const Expanded(
+                                child: Text(
+                                  '推荐模式 · 手机本地运行',
+                                  style: TextStyle(color: Color(0xFF4C9EEB), fontSize: 11),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 10),
                           const Row(
                             children: [
-                              Icon(Icons.bolt, color: Color(0xFF4C9EEB), size: 24),
-                              SizedBox(width: 8),
-                              Text(
-                                '运行内置 FSYL TV 影视服务（本地移植）',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
+                              Icon(Icons.bolt, color: Color(0xFF4C9EEB), size: 22),
+                              SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  '运行内置 FSYL TV 影视服务',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ),
                             ],
                           ),
                           const SizedBox(height: 6),
                           const Text(
-                            '一键即用！手机本地运行项目自带的影视核心，已移植 PC 端全部修复与 20 个影视采集源，无需任何外部服务器。',
+                            '一键即用！手机本地运行项目自带影视核心，已移植 PC 端全部修复与 20 个影视采集源，无需任何外部服务器。',
                             style: TextStyle(color: Colors.white70, fontSize: 12, height: 1.4),
                           ),
                         ],
